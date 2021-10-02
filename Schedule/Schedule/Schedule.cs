@@ -88,7 +88,7 @@ namespace Schedule
                 this.salidasRecursivas.Add(LaSalida);
             }
 
-            while (LaFecha < this.fechaProcesada)
+            if (LaFecha < this.fechaProcesada)
             {                
                 LaFecha = LaFecha.AddDays(1);
                 LaSalida = this.DevolverSalida(ElTipoStr, LaFecha, LaFecha, this.configuracion.FechaInicio);
