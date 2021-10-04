@@ -1,44 +1,23 @@
 ﻿using Schedule.RecursosTextos;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Schedule
 {
     public class Schedule
     {
         private Configuracion configuracion;
-        private DateTime fechaProcesada;
-        private List<Output> salidasRecursivas;
 
         public Schedule(Configuracion Laconfiguracion)
         {
             this.configuracion = Laconfiguracion;
-            this.salidasRecursivas = new List<Output>();
         }
 
         public Output[] Procesar(DateTime LaFecha)
         {
             if (this.configuracion.Enabled)
             {
-                if (this.configuracion.Tipo == TipoFranja.Once)
-                {
-                    return new Output[] { this.ProcesarOnce(LaFecha) };
-                }
-                else if (this.configuracion.Tipo == TipoFranja.Recurring &&
-                    this.configuracion.Periodicidad != null)
-                {
-                    this.fechaProcesada = LaFecha.AddDays(this.configuracion.DiasPeriodicidad.Value);
-
-                    this.ProcesarDiasRecurring(new Output(), LaFecha);
-
-                    return this.salidasRecursivas.ToArray();
-                }
-
-                return new Output[] {this.DevolverSalida("",
-                   LaFecha, LaFecha, this.configuracion.FechaInicio) };
+               return this.ProcesarDias(LaFecha);
             }
             else
             {
@@ -47,23 +26,7 @@ namespace Schedule
             }
         }
 
-        private Output ProcesarOnce(DateTime LaFecha)
-        {
-            Output LaSalida = new Output();
-
-            if (this.configuracion.FechaPaso != null && this.configuracion.FechaPaso > LaFecha)
-            {
-                return this.DevolverSalida(this.configuracion.Tipo.ToString().ToLower(),
-                   this.configuracion.FechaPaso.Value, this.configuracion.FechaPaso.Value, this.configuracion.FechaInicio);
-            }
-            else
-            {
-                return this.DevolverSalida(this.configuracion.Tipo.ToString().ToLower(),
-                   LaFecha, LaFecha, this.configuracion.FechaInicio);
-            }
-        }
-
-        private Output DevolverSalida(string ElTipo, DateTime LaFechaPaso, DateTime LaHoraPaso, DateTime LaFechaInicio)
+        private Output DevolverSalida(string ElTipo, DateTime LaFechaPaso, DateTime LaHoraPaso, DateTime? LaFechaInicio)
         {
             string LaFechaHoraPasoStr = LaFechaPaso.ToString("dd/MM/yyyy");
 
@@ -74,26 +37,61 @@ namespace Schedule
 
             Output LaSalida = new Output();
             LaSalida.FechaSalida = LaFechaPaso;
-            LaSalida.Descripcion = string.Format(Global.Salida,ElTipo, LaFechaHoraPasoStr
-                , LaFechaInicio.ToString("dd/MM/yyyy"));
+            LaSalida.Descripcion = string.Format(Global.Salida,ElTipo, LaFechaHoraPasoStr) +
+                (LaFechaInicio != null?" " + string.Format(Global.StartingOn
+                , LaFechaInicio.Value.ToString("dd/MM/yyyy")):"");
 
             return LaSalida;
         }
 
-        private Output ProcesarDiasRecurring(Output LaSalida, DateTime LaFecha)
+        private Output[] ProcesarDias(DateTime LaFecha)
         {
-            string ElTipoStr = "every day";
-            if (LaSalida != null && LaSalida.FechaSalida != null)
+            string ElTipoStr = "";
+            if (this.configuracion.Tipo == TipoFranja.Once)
             {
-                this.salidasRecursivas.Add(LaSalida);
+                ElTipoStr = "once";
+            }
+            else
+            {
+                ElTipoStr = "every day";
             }
 
-            if (LaFecha < this.fechaProcesada)
-            {                
-                LaFecha = LaFecha.AddDays(1);
-                LaSalida = this.DevolverSalida(ElTipoStr, LaFecha, LaFecha, this.configuracion.FechaInicio);
-                
-                return this.ProcesarDiasRecurring(LaSalida, LaFecha);
+            if (this.configuracion.Tipo == TipoFranja.Once)
+            {
+                return ProcesarOnce(ElTipoStr);
+            }
+            else
+            {
+                return ProcesarRecurring(LaFecha, ElTipoStr);
+            }
+        }
+
+        private Output[] ProcesarRecurring(DateTime LaFecha, string ElTipoStr)
+        {
+            List<Output> LasSalidas = new List<Output>();
+
+            for (DateTime CadaFecha = LaFecha.AddDays(1); CadaFecha <= LaFecha.AddDays(this.configuracion.DiasPeriodicidad); CadaFecha = CadaFecha.AddDays(1))
+            {
+                LasSalidas.Add(this.DevolverSalida(ElTipoStr, CadaFecha, CadaFecha, this.configuracion.FechaInicio));
+            }
+
+            return LasSalidas.ToArray();
+        }
+
+        private Output[] ProcesarOnce(string ElTipoStr)
+        {
+            if (this.configuracion.FechaPaso == null)
+            {
+                throw new Exception("Debe indicar la Fecha de Configuración");
+            }
+
+            if ((this.configuracion.FechaInicio != null &&
+                this.configuracion.FechaPaso > this.configuracion.FechaInicio) ||
+                (this.configuracion.FechaInicio == null))
+            {
+                return new Output[]{this.DevolverSalida(ElTipoStr,
+                        this.configuracion.FechaPaso.Value,
+                        this.configuracion.FechaPaso.Value, this.configuracion.FechaInicio) };
             }
 
             return null;

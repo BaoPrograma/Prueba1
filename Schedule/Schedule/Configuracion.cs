@@ -15,8 +15,8 @@ namespace Schedule
         public TipoFranja Tipo;
         public DateTime? FechaPaso;
         public TipoPeriodicidad? Periodicidad;
-        public int? DiasPeriodicidad;
-        public DateTime FechaInicio;
+        public int DiasPeriodicidad;
+        public DateTime? FechaInicio;
         public DateTime? FechaFin;
         public bool Enabled;
     }
