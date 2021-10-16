@@ -14,6 +14,7 @@ namespace Schedule
 
     public enum TipoPeriodicidad
     {
-        Daily = 0
+        Daily = 0,
+        Weekly = 1
     }
 }
