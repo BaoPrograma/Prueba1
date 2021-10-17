@@ -6,9 +6,15 @@ using System.Threading.Tasks;
 
 namespace Schedule
 {
-    public class Output
+    public enum TypeStep
     {
-        public DateTime? OutputDate;
-        public string Description;
+        Once = 0,
+        Recurring = 1
+    }
+
+    public enum TypeDayStep
+    {
+        Daily = 0,
+        Weekly = 1
     }
 }

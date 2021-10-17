@@ -1,277 +1,275 @@
-﻿using Schedule.RecursosTextos;
+﻿using Schedule.Config;
+using Schedule.RecursosTextos;
 using Semicrol.Utilidades;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Schedule
+namespace Schedule.Process
 {
     public class Schedule
     {
-        private Configuracion configuracion;
-        private DayOfWeek[] week;
+        private Configuration configuration;
+        private DayOfWeek[] weekVar;
 
-        public Schedule(Configuracion Laconfiguracion)
+        public Schedule(Configuration Laconfiguracion)
         {
-            this.configuracion = Laconfiguracion;
+            configuration = Laconfiguracion;
 
-            this.InicializarWeek();
+            this.PrepareWeek();
         }
 
-        private void InicializarWeek()
+        private void PrepareWeek()
         {
-            List<DayOfWeek> LaLista = new List<DayOfWeek>();
+            List<DayOfWeek> WeekList = new List<DayOfWeek>();
 
-            if (this.configuracion.WeekMonday)
-                LaLista.Add(DayOfWeek.Monday);
-            if (this.configuracion.WeekTuesday)
-                LaLista.Add(DayOfWeek.Tuesday);
-            if (this.configuracion.WeekWednesday)
-                LaLista.Add(DayOfWeek.Wednesday);
-            if (this.configuracion.WeekThursday)
-                LaLista.Add(DayOfWeek.Thursday);
-            if (this.configuracion.WeekFriday)
-                LaLista.Add(DayOfWeek.Friday);
-            if (this.configuracion.WeekSaturday)
-                LaLista.Add(DayOfWeek.Saturday);
-            if (this.configuracion.WeekSunday)
-                LaLista.Add(DayOfWeek.Sunday);
+            if (configuration.WeekMonday)
+                WeekList.Add(DayOfWeek.Monday);
+            if (configuration.WeekTuesday)
+                WeekList.Add(DayOfWeek.Tuesday);
+            if (configuration.WeekWednesday)
+                WeekList.Add(DayOfWeek.Wednesday);
+            if (configuration.WeekThursday)
+                WeekList.Add(DayOfWeek.Thursday);
+            if (configuration.WeekFriday)
+                WeekList.Add(DayOfWeek.Friday);
+            if (configuration.WeekSaturday)
+                WeekList.Add(DayOfWeek.Saturday);
+            if (configuration.WeekSunday)
+                WeekList.Add(DayOfWeek.Sunday);
 
-            this.week = LaLista.ToArray();
+            weekVar = WeekList.ToArray();
         }
 
-        public Output[] ProcesarPeriodo(DateTime LaFecha)
+        public Output[] ExecuteDateStep(DateTime TheDate)
         {
-            if (this.configuracion.Enabled)
+            if (configuration.Enabled)
             {
-               return this.Procesar(LaFecha);
+                return Execute(TheDate);
             }
             else
             {
-                return new Output[] {this.DevolverSalida("",
-                   LaFecha, LaFecha, this.configuracion.FechaInicio, null)};
+                return new Output[] {ReturnOuput("",
+                   TheDate, TheDate, configuration.DateFrom, null)};
             }
         }
 
-        private Output DevolverSalida(string ElTipo, DateTime LaFechaPaso, DateTime LaHoraPaso, DateTime? LaFechaInicio, DateTime? LaHora)
+        private Output ReturnOuput(string TheWeeStepStr, DateTime TheDateStep, DateTime TheHourStep, DateTime? TheDateFrom, DateTime? TheHour)
         {
-            string LaFechaHoraPasoStr = LaFechaPaso.ToString("dd/MM/yyyy");
+            string TheDateStepStr = TheDateStep.ToString("dd/MM/yyyy");
 
-            if (LaHoraPaso.TimeOfDay > new TimeSpan(00, 00, 00))
+            if (TheHourStep.TimeOfDay > new TimeSpan(00, 00, 00))
             {
-                LaFechaHoraPasoStr += Global.at + " " + LaHoraPaso.ToString("HH:mm");
+                TheDateStepStr += Global.at + " " + TheHourStep.ToString("HH:mm");
             }
 
-            Output LaSalida = new Output();
-            LaSalida.FechaSalida = LaFechaPaso;
-            LaSalida.Descripcion = 
-                string.Format(Global.Salida,ElTipo, LaFechaHoraPasoStr) +
-                (LaFechaInicio != null?" " + string.Format(Global.StartingOn
-                , LaFechaInicio.Value.ToString("dd/MM/yyyy")):"") + 
-                " " + LaHora != null?LaHora.Value.ToString("HH:mm"): "00:00";
+            Output TheExit = new Output();
+            TheExit.OutputDate = TheDateStep;
+            TheExit.Description =
+                string.Format(Global.Output, TheWeeStepStr, TheDateStepStr) +
+                (TheDateFrom != null ? " " + string.Format(Global.StartingOn
+                , TheDateFrom.Value.ToString("dd/MM/yyyy")) : "") +
+                " " + TheHour != null ? TheHour.Value.ToString("HH:mm") : "00:00";
 
-            return LaSalida;
+            return TheExit;
         }
 
-        private Output[] Procesar(DateTime LaFecha)
+        private Output[] Execute(DateTime TheDate)
         {
-            string ElTipoPeriodoDiaStr = "";
-            if (this.configuracion.Tipo == TipoFranja.Once)
+            string TheStepStr = "";
+            if (configuration.TimeType == TypeStep.Once)
             {
-                ElTipoPeriodoDiaStr = Global.once;
+                TheStepStr = Global.once;
             }
             else
             {
-                if (this.configuracion.Periodicidad == TipoPeriodicidad.Daily)
+                if (configuration.TypeStep == TypeDayStep.Daily)
                 {
-                    ElTipoPeriodoDiaStr = Global.every + Global.day;
+                    TheStepStr = Global.every + Global.day;
                 }
                 else
                 {
-                    ElTipoPeriodoDiaStr = Global.every + " " + this.configuracion.WeeklyPaso + " " + Global.weeks;
+                    TheStepStr = Global.every + " " + configuration.WeekStep + " " + Global.weeks;
                 }
             }
 
-            if (this.configuracion.Tipo == TipoFranja.Once)
+            if (configuration.TimeType == TypeStep.Once)
             {
-                return ProcesarOnce(ElTipoPeriodoDiaStr);
+                return ExecuteOnce(TheStepStr);
             }
             else
             {
-                return ProcesarRecurring(LaFecha, ElTipoPeriodoDiaStr);
+                return ExecuteRecurring(TheDate, TheStepStr);
             }
         }
 
-        private Output[] ProcesarRecurring(DateTime LaFecha, string ElTipoPeriodoDiaStr)
+        private Output[] ExecuteRecurring(DateTime TheDate, string TheTypeStepStr)
         {
-            List<Output> LasSalidas = new List<Output>();
+            List<Output> TheExistList = new List<Output>();
 
-            if (this.configuracion.Periodicidad == TipoPeriodicidad.Daily)
+            if (configuration.TypeStep == TypeDayStep.Daily)
             {
-                for (DateTime CadaFecha = LaFecha.AddDays(1); CadaFecha <= LaFecha; CadaFecha = CadaFecha.AddDays(1))
+                for (DateTime EachDate = TheDate.AddDays(1); EachDate <= TheDate; EachDate = EachDate.AddDays(1))
                 {
-                    LasSalidas.Add(this.DevolverSalida(ElTipoPeriodoDiaStr, CadaFecha, CadaFecha, this.configuracion.FechaInicio, null));
+                    TheExistList.Add(ReturnOuput(TheTypeStepStr, EachDate, EachDate, configuration.DateFrom, null));
                 }
             }
             else
             {
-                DateTime LaFechafin = this.configuracion.FechaFin != null ? this.configuracion.FechaFin.Value : DateTime.MaxValue;
-                int WeekPaso = this.configuracion.WeeklyPaso > 0? this.configuracion.WeeklyPaso: 0;
+                DateTime TheDateTo = configuration.DateTo != null ? configuration.DateTo.Value : DateTime.MaxValue;
+                int WeekStep = configuration.WeekStep > 0 ? configuration.WeekStep : 0;
 
-                DateTime LaFechaSemana = LaFecha;
-
-                for (DateTime CadaFechaSup = LaFecha; CadaFechaSup <= LaFechafin;
-                    CadaFechaSup = this.GetFechaSiguiente(CadaFechaSup))
+                for (DateTime EachWeekDate = TheDate; EachWeekDate <= TheDateTo;
+                    EachWeekDate = this.GetNexDate(EachWeekDate))
                 {
-                    LasSalidas.AddRange(
-                        this.ProcesarSemanario
-                        (LaFecha, ElTipoPeriodoDiaStr, LaFechafin, CadaFechaSup));
+                    TheExistList.AddRange(
+                        this.ExecuteWeekly(TheTypeStepStr, TheDateTo, EachWeekDate));
                 }
             }
 
-            return LasSalidas.ToArray();
+            return TheExistList.ToArray();
         }
 
-        private DateTime GetFechaSiguiente(DateTime LaFecha)
+        private DateTime GetNexDate(DateTime TheDate)
         {
-            if (this.configuracion.WeeklyPaso > 0)
+            if (configuration.WeekStep > 0)
             {
-                if (LaFecha.DayOfWeek == DayOfWeek.Monday)
-                    return LaFecha.AddDays(7 * this.configuracion.WeeklyPaso);
-                if (LaFecha.DayOfWeek == DayOfWeek.Tuesday)
-                    return LaFecha.AddDays((7 * this.configuracion.WeeklyPaso) - 1);
-                if (LaFecha.DayOfWeek == DayOfWeek.Wednesday)
-                    return LaFecha.AddDays((7 * this.configuracion.WeeklyPaso) - 2);
-                if (LaFecha.DayOfWeek == DayOfWeek.Thursday)
-                    return LaFecha.AddDays((7 * this.configuracion.WeeklyPaso) - 3);
-                if (LaFecha.DayOfWeek == DayOfWeek.Friday)
-                    return LaFecha.AddDays((7 * this.configuracion.WeeklyPaso) - 4);
-                if (LaFecha.DayOfWeek == DayOfWeek.Saturday)
-                    return LaFecha.AddDays((7 * this.configuracion.WeeklyPaso) - 5);
-                if (LaFecha.DayOfWeek == DayOfWeek.Sunday)
-                    return LaFecha.AddDays((7 * this.configuracion.WeeklyPaso) - 6);
+                if (TheDate.DayOfWeek == DayOfWeek.Monday)
+                    return TheDate.AddDays(7 * configuration.WeekStep);
+                if (TheDate.DayOfWeek == DayOfWeek.Tuesday)
+                    return TheDate.AddDays(7 * configuration.WeekStep - 1);
+                if (TheDate.DayOfWeek == DayOfWeek.Wednesday)
+                    return TheDate.AddDays(7 * configuration.WeekStep - 2);
+                if (TheDate.DayOfWeek == DayOfWeek.Thursday)
+                    return TheDate.AddDays(7 * configuration.WeekStep - 3);
+                if (TheDate.DayOfWeek == DayOfWeek.Friday)
+                    return TheDate.AddDays(7 * configuration.WeekStep - 4);
+                if (TheDate.DayOfWeek == DayOfWeek.Saturday)
+                    return TheDate.AddDays(7 * configuration.WeekStep - 5);
+                if (TheDate.DayOfWeek == DayOfWeek.Sunday)
+                    return TheDate.AddDays(7 * configuration.WeekStep - 6);
             }
             else
             {
-                throw new Exception(Global.ValidarWeeklyPaso);
+                throw new Exception(Global.ValidateWeeklyStep);
             }
 
-            return LaFecha;
+            return TheDate;
         }
 
-        private Output DevolverSalidaRecurringWeekly(string ElTipoPeriodoDiaStr, DateTime LaFechaPaso, DateTime? LaFechaInicio, DateTime? LaHora)
+        private Output ReturnExitRecurringWeekly(string TheTypeStepStr, DateTime TheDateStep, DateTime? TheDateFrom, DateTime? TheDate)
         {
-            string LaFechaPasoStr = LaFechaPaso.ToString("dd/MM/yyyy");
+            string TheDateStepStr = TheDateStep.ToString("dd/MM/yyyy");
 
-            string DiasSemanaStr = " on ";
-            this.week.ToList().ForEach(
-                S => DiasSemanaStr = DiasSemanaStr + S.ToString().ToLower() + ", ");
-            DiasSemanaStr = DiasSemanaStr.Trim().TrimEnd(',');
+            string WeekDaysStr = " on ";
+            weekVar.ToList().ForEach(
+                S => WeekDaysStr = WeekDaysStr + S.ToString().ToLower() + ", ");
+            WeekDaysStr = WeekDaysStr.Trim().TrimEnd(',');
 
-            string HorasDiasStr = (this.configuracion.HoraDesde != null ? this.configuracion.HoraDesde.Value.ToShortTimeString() :
+            string HorasDiasStr = (configuration.HourFrom != null ? configuration.HourFrom.Value.ToShortTimeString() :
                 new DateTime(1900, 1, 1, 0, 0, 0).ToShortTimeString()) + " and " +
-                (this.configuracion.HoraHasta != null ? this.configuracion.HoraHasta.Value.ToShortTimeString() :
+                (configuration.HourTo != null ? configuration.HourTo.Value.ToShortTimeString() :
                 new DateTime(1900, 1, 1, 23, 59, 0).ToShortTimeString());
 
-            string ElTipoPeriodoHora = Global.every + " " + this.configuracion.HourPaso.ToString() + 
+            string TheHourStepStr = Global.every + " " + configuration.HourStep.ToString() +
                 " " + Global.hours;
 
-            if (LaHora != null)
+            if (TheDate != null)
             {
-                LaFechaPaso = LaFechaPaso.AddHours(LaHora.Value.Hour).AddMinutes(LaHora.Value.Minute);
+                TheDateStep = TheDateStep.AddHours(TheDate.Value.Hour).AddMinutes(TheDate.Value.Minute);
             }
 
-            Output LaSalida = new Output();
-            LaSalida.FechaSalida = LaFechaPaso;
-            LaSalida.Descripcion =
-                string.Format(Global.SalidaRecurringWeekly, ElTipoPeriodoDiaStr, DiasSemanaStr, ElTipoPeriodoHora, HorasDiasStr,
-                (LaFechaInicio != null ? LaFechaInicio.Value.ToString("dd/MM/yyyy") : ""));
+            Output TheExit = new Output();
+            TheExit.OutputDate = TheDateStep;
+            TheExit.Description =
+                string.Format(Global.ExitRecurringWeekly, TheTypeStepStr, WeekDaysStr, TheHourStepStr, HorasDiasStr,
+                TheDateFrom != null ? TheDateFrom.Value.ToString("dd/MM/yyyy") : "");
 
-            return LaSalida;
+            return TheExit;
         }
 
-        private Output[] ProcesarSemanario(DateTime LaFecha, string ElTipoStr, 
-            DateTime LaFechafin, DateTime CadaFechaSup)
+        private Output[] ExecuteWeekly(string ElTipoStr,
+            DateTime TheDateTo, DateTime EachDateWeek)
         {
-            List<Output> LasSalidas = new List<Output>();
+            List<Output> TheExits = new List<Output>();
 
-            for (DateTime CadaFecha = CadaFechaSup; CadaFecha <= LaFechafin;
-                CadaFecha = CadaFecha.AddDays(1))
+            for (DateTime EachDate = EachDateWeek; EachDate <= TheDateTo;
+                EachDate = EachDate.AddDays(1))
             {
-                if (this.week.Any(W => W.Equals(CadaFecha.DayOfWeek)))
+                if (weekVar.Any(W => W.Equals(EachDate.DayOfWeek)))
                 {
-                    LasSalidas.AddRange(this.ProcesarHoras(ElTipoStr, CadaFecha));
+                    TheExits.AddRange(ExecuteHours(ElTipoStr, EachDate));
                 }
 
-                if (CadaFecha.DayOfWeek == DayOfWeek.Sunday)
+                if (EachDate.DayOfWeek == DayOfWeek.Sunday)
                 {
                     break;
                 }
             }
 
-            return LasSalidas.ToArray();
+            return TheExits.ToArray();
         }
 
-        private Output[] ProcesarHoras(string ElTipoStr, DateTime LaFecha)
+        private Output[] ExecuteHours(string TheTypeStr, DateTime TheDate)
         {
-            List<Output> LaLista = new List<Output>();
+            List<Output> TheList = new List<Output>();
 
-            DateTime LaHoraDesde = this.RecuperarHoraDesde(LaFecha);
+            DateTime LaHoraDesde = ReturnHourFrom(TheDate);
 
-            DateTime LaHoraHasta = this.RecuperarHoraHasta(LaFecha);
+            DateTime LaHoraHasta = ReturnHourTo(TheDate);
 
-            int LaHoraPaso = this.configuracion.HourPaso != null ?
-                this.configuracion.HourPaso.Value : 1;
+            int LaHoraPaso = configuration.HourStep != null ?
+                configuration.HourStep.Value : 1;
 
-            for (DateTime LaHora = LaHoraDesde; LaHora <= LaHoraHasta;
-                LaHora = LaHora.AddHours(LaHoraPaso))
+            for (DateTime TheHour = LaHoraDesde; TheHour <= LaHoraHasta;
+                TheHour = TheHour.AddHours(LaHoraPaso))
             {
-                LaLista.Add(this.DevolverSalidaRecurringWeekly(ElTipoStr, LaFecha, this.configuracion.FechaInicio, LaHora));
+                TheList.Add(ReturnExitRecurringWeekly(TheTypeStr, TheDate, configuration.DateFrom, TheHour));
             }
 
-            return LaLista.ToArray();
+            return TheList.ToArray();
         }
 
-        private DateTime RecuperarHoraHasta(DateTime LaFecha)
+        private DateTime ReturnHourTo(DateTime TheDate)
         {
-            DateTime LaHoraHasta = new DateTime(LaFecha.Year, LaFecha.Month, LaFecha.Day, 23, 59, 59);
+            DateTime TheDateTo = new DateTime(TheDate.Year, TheDate.Month, TheDate.Day, 23, 59, 59);
 
-            if (this.configuracion.HoraHasta != null)
+            if (configuration.HourTo != null)
             {
-                LaHoraHasta = new DateTime(LaFecha.Year, LaFecha.Month, LaFecha.Day, this.configuracion.HoraHasta.Value.Hour, this.configuracion.HoraHasta.Value.Minute,
-                    this.configuracion.HoraHasta.Value.Second);
+                TheDateTo = new DateTime(TheDate.Year, TheDate.Month, TheDate.Day, configuration.HourTo.Value.Hour, configuration.HourTo.Value.Minute,
+                    configuration.HourTo.Value.Second);
             }
 
-            return LaHoraHasta;
+            return TheDateTo;
         }
 
-        private DateTime RecuperarHoraDesde(DateTime LaFecha)
+        private DateTime ReturnHourFrom(DateTime TheDate)
         {
-            DateTime LaHoraDesde = new DateTime(LaFecha.Year, LaFecha.Month, LaFecha.Day, 0, 0, 0);
+            DateTime TheHourFrom = new DateTime(TheDate.Year, TheDate.Month, TheDate.Day, 0, 0, 0);
 
-            if (this.configuracion.HoraDesde != null)
+            if (configuration.HourFrom != null)
             {
-                LaHoraDesde = new DateTime(LaFecha.Year, LaFecha.Month, LaFecha.Day, this.configuracion.HoraDesde.Value.Hour, this.configuracion.HoraDesde.Value.Minute,
-                    this.configuracion.HoraDesde.Value.Second);
+                TheHourFrom = new DateTime(TheDate.Year, TheDate.Month, TheDate.Day, configuration.HourFrom.Value.Hour, configuration.HourFrom.Value.Minute,
+                    configuration.HourFrom.Value.Second);
             }
 
-            return LaHoraDesde;
+            return TheHourFrom;
         }
 
-        private Output[] ProcesarOnce(string ElTipoStr)
+        private Output[] ExecuteOnce(string ElTipoStr)
         {
-            if (this.configuracion.FechaPaso == null)
+            if (configuration.DateStep == null)
             {
-                throw new Exception(Global.ValidarFechaConfiguracion);
+                throw new Exception(Global.ValidateDateConfiguration);
             }
 
-            if ((this.configuracion.FechaInicio != null &&
-                this.configuracion.FechaPaso > this.configuracion.FechaInicio) ||
-                (this.configuracion.FechaInicio == null))
+            if (configuration.DateFrom != null &&
+                configuration.DateStep > configuration.DateFrom ||
+                configuration.DateFrom == null)
             {
-                return new Output[]{this.DevolverSalida(ElTipoStr,
-                        this.configuracion.FechaPaso.Value,
-                        this.configuracion.FechaPaso.Value, this.configuracion.FechaInicio, null) };
+                return new Output[]{ReturnOuput(ElTipoStr,
+                        configuration.DateStep.Value,
+                        configuration.DateStep.Value, configuration.DateFrom, null) };
             }
 
             return null;
