@@ -4,156 +4,158 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using Schedule.Process;
+using Schedule.Config;
 
-namespace Schedule
+namespace Schedule.Test
 {
     public class ScheduleTest
     {
-        private Configuracion configuracion;
-        private Schedule procesador;
+        private Configuration configuracion;
+        private Process.Schedule procesador;
 
         public ScheduleTest()
         {
-            this.configuracion = new Configuracion();
+            this.configuracion = new Configuration();
         }
 
 
         [Fact]
-        public void Lanzar_once_diario_deberia_devolver_fechaPaso()
+        public void Execute_once_diary_should_exit_date_step()
         {
             // Arrange
             this.configuracion.Enabled = true;
-            this.configuracion.FechaInicio = new DateTime(2021, 1, 1);
-            this.configuracion.Tipo = TipoFranja.Once;
-            this.configuracion.FechaPaso = new DateTime(2021, 8, 1).AddHours(14);
-            this.configuracion.Periodicidad = TipoPeriodicidad.Daily;
+            this.configuracion.DateFrom = new DateTime(2021, 1, 1);
+            this.configuracion.TimeType = TypeStep.Once;
+            this.configuracion.DateStep = new DateTime(2021, 8, 1).AddHours(14);
+            this.configuracion.TypeStep = TypeDayStep.Daily;
             DateTime LaFecha = new DateTime(2021 , 1 , 4);
-            this.procesador = new Schedule(this.configuracion);
+            this.procesador = new Process.Schedule(this.configuracion);
 
             //Act
-            Output[] LaSalidas = this.procesador.ProcesarPeriodo(LaFecha);
+            Output[] LaSalidas = this.procesador.ExecuteDateStep(LaFecha);
 
             //Assert
-            Assert.Equal(this.configuracion.FechaPaso, LaSalidas[0].FechaSalida);
+            Assert.Equal(this.configuracion.DateStep, LaSalidas[0].OutputDate);
         }
 
         [Fact]
-        public void Lanzar_recurring_WeeklyPaso_debe_ser_mayor_o_igual_a_0()
+        public void Execute_recurring_WeeklyStep_should_be_higher_o_equal_to_0()
         {
             // Arrange
             this.configuracion.Enabled = true;
-            this.configuracion.FechaInicio = new DateTime(2021, 1, 1);
-            this.configuracion.Tipo = TipoFranja.Recurring;
-            this.configuracion.Periodicidad = TipoPeriodicidad.Weekly;
-            this.configuracion.WeeklyPaso = 1;
+            this.configuracion.DateFrom = new DateTime(2021, 1, 1);
+            this.configuracion.TimeType = TypeStep.Recurring;
+            this.configuracion.TypeStep = TypeDayStep.Weekly;
+            this.configuracion.WeekStep = 1;
             DateTime LaFecha = new DateTime(2021, 1, 4);
-            this.procesador = new Schedule(this.configuracion);
+            this.procesador = new Process.Schedule(this.configuracion);
 
             //Act
-            Output[] LaSalidas = this.procesador.ProcesarPeriodo(LaFecha);
+            Output[] LaSalidas = this.procesador.ExecuteDateStep(LaFecha);
 
             //Assert
-            Assert.True(this.configuracion.WeeklyPaso >= 0);
+            Assert.True(this.configuracion.WeekStep >= 0);
         }
 
         [Fact]
-        public void Lanzar_recurring_WeeklyPaso_no_debe_ser_menor_0()
+        public void Execute_recurring_WeeklyStep_not_should_be_lower_than_0()
         {
             // Arrange
             this.configuracion.Enabled = true;
-            this.configuracion.FechaInicio = new DateTime(2021, 1, 1);
-            this.configuracion.Tipo = TipoFranja.Recurring;
-            this.configuracion.Periodicidad = TipoPeriodicidad.Weekly;
-            this.configuracion.WeeklyPaso = -1;
+            this.configuracion.DateFrom = new DateTime(2021, 1, 1);
+            this.configuracion.TimeType = TypeStep.Recurring;
+            this.configuracion.TypeStep = TypeDayStep.Weekly;
+            this.configuracion.WeekStep = -1;
             DateTime LaFecha = new DateTime(2021, 1, 4);
-            this.procesador = new Schedule(this.configuracion);
+            this.procesador = new Process.Schedule(this.configuracion);
 
             //Act
-            Output[] LaSalidas = this.procesador.ProcesarPeriodo(LaFecha);
+            Output[] LaSalidas = this.procesador.ExecuteDateStep(LaFecha);
 
             //Assert
-            Assert.False(this.configuracion.WeeklyPaso < 0);
+            Assert.False(this.configuracion.WeekStep < 0);
         }
 
         [Fact]
-        public void Lanzar_once_solo_ocurre_Diary()
+        public void Execute_once_only_occurs_Diary()
         {
             // Arrange
             this.configuracion.Enabled = true;
-            this.configuracion.FechaInicio = new DateTime(2021, 1, 1);
-            this.configuracion.Tipo = TipoFranja.Once;
-            this.configuracion.FechaPaso = new DateTime(2021, 8, 1).AddHours(14);
-            this.configuracion.Periodicidad = TipoPeriodicidad.Daily;
+            this.configuracion.DateFrom = new DateTime(2021, 1, 1);
+            this.configuracion.TimeType = TypeStep.Once;
+            this.configuracion.DateStep = new DateTime(2021, 8, 1).AddHours(14);
+            this.configuracion.TypeStep = TypeDayStep.Daily;
             DateTime LaFecha = new DateTime(2021, 1, 4);
-            this.procesador = new Schedule(this.configuracion);
+            this.procesador = new Process.Schedule(this.configuracion);
 
             //Act
-            Output[] LaSalidas = this.procesador.ProcesarPeriodo(LaFecha);
+            Output[] LaSalidas = this.procesador.ExecuteDateStep(LaFecha);
 
             //Assert
-            Assert.Equal(this.configuracion.FechaPaso, LaSalidas[0].FechaSalida);
+            Assert.Equal(this.configuracion.DateStep, LaSalidas[0].OutputDate);
         }
 
         [Fact]
-        public void Lanzar_once_no_ocurre_Weekly()
+        public void Execute_once_not_occurs_Weekly()
         {
             // Arrange
             this.configuracion.Enabled = true;
-            this.configuracion.FechaInicio = new DateTime(2021, 1, 1);
-            this.configuracion.Tipo = TipoFranja.Once;
-            this.configuracion.FechaPaso = new DateTime(2021, 8, 1).AddHours(14);
-            this.configuracion.Periodicidad = TipoPeriodicidad.Weekly;
+            this.configuracion.DateFrom = new DateTime(2021, 1, 1);
+            this.configuracion.TimeType = TypeStep.Once;
+            this.configuracion.DateStep = new DateTime(2021, 8, 1).AddHours(14);
+            this.configuracion.TypeStep = TypeDayStep.Weekly;
             DateTime LaFecha = new DateTime(2021, 1, 4);
-            this.procesador = new Schedule(this.configuracion);
+            this.procesador = new Process.Schedule(this.configuracion);
 
             //Act
-            Output[] LaSalidas = this.procesador.ProcesarPeriodo(LaFecha);
+            Output[] LaSalidas = this.procesador.ExecuteDateStep(LaFecha);
 
             //Assert
-            Assert.NotEqual(TipoPeriodicidad.Daily, this.configuracion.Periodicidad);
+            Assert.NotEqual(TypeDayStep.Daily, this.configuracion.TypeStep);
         }
 
         [Fact]
-        public void Lanzar_recurring_HourPaso_debe_ser_mayor_0()
+        public void Execute_recurring_HourStep_should_be_higher_than_0()
         {
             // Arrange
             this.configuracion.Enabled = true;
-            this.configuracion.FechaInicio = new DateTime(2021, 1, 1);
-            this.configuracion.Tipo = TipoFranja.Recurring;
-            this.configuracion.Periodicidad = TipoPeriodicidad.Weekly;
-            this.configuracion.WeeklyPaso = -1;
-            this.configuracion.HourPaso = 1;
+            this.configuracion.DateFrom = new DateTime(2021, 1, 1);
+            this.configuracion.TimeType = TypeStep.Recurring;
+            this.configuracion.TypeStep = TypeDayStep.Weekly;
+            this.configuracion.WeekStep = -1;
+            this.configuracion.HourStep = 1;
             DateTime LaFecha = new DateTime(2021, 1, 4);
-            this.procesador = new Schedule(this.configuracion);
+            this.procesador = new Process.Schedule(this.configuracion);
 
             //Act
-            Output[] LaSalidas = this.procesador.ProcesarPeriodo(LaFecha);
+            Output[] LaSalidas = this.procesador.ExecuteDateStep(LaFecha);
 
             //Assert
-            Assert.True(this.configuracion.HourPaso > 0);
+            Assert.True(this.configuracion.HourStep > 0);
         }
 
         [Fact]
-        public void Lanzar_recurring_Weekly()
+        public void Execute_recurring_Weekly()
         { 
             // Arrange
             this.configuracion.Enabled = true;
-            this.configuracion.FechaInicio = new DateTime(2020, 1, 1);
-            this.configuracion.FechaFin = new DateTime(2020, 1, 27);
-            this.configuracion.Tipo = TipoFranja.Recurring;
-            this.configuracion.Periodicidad = TipoPeriodicidad.Weekly;
-            this.configuracion.WeeklyPaso = 2;
-            this.configuracion.HourPaso = 2;
-            this.configuracion.HoraDesde = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuracion.HoraHasta = new DateTime(1900, 1, 1, 12, 0, 0);
+            this.configuracion.DateFrom = new DateTime(2020, 1, 1);
+            this.configuracion.DateTo = new DateTime(2020, 1, 27);
+            this.configuracion.TimeType = TypeStep.Recurring;
+            this.configuracion.TypeStep = TypeDayStep.Weekly;
+            this.configuracion.WeekStep = 2;
+            this.configuracion.HourStep = 2;
+            this.configuracion.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.configuracion.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
             this.configuracion.WeekMonday = true;
             this.configuracion.WeekThursday = true;
             this.configuracion.WeekFriday = true;
             DateTime LaFecha = new DateTime(2020, 1, 1);
-            this.procesador = new Schedule(this.configuracion);
+            this.procesador = new Process.Schedule(this.configuracion);
 
             //Act
-            Output[] LaSalidas = this.procesador.ProcesarPeriodo(LaFecha);
+            Output[] LaSalidas = this.procesador.ExecuteDateStep(LaFecha);
 
             //Assert
             Assert.True(LaSalidas.Count() > 0);
