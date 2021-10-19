@@ -117,6 +117,32 @@ namespace Schedule.Process
             }
         }
 
+        #region Once
+        private Output[] ExecuteOnce(string ElTipoStr)
+        {
+            if ((this.configuration.DateFrom != null &&
+                this.configuration.DateStep > this.configuration.DateFrom) ||
+                this.configuration.DateFrom == null)
+            {
+                return new Output[]{ReturnOuput(ElTipoStr,
+                        this.configuration.DateStep.Value,
+                        this.configuration.DateStep.Value, this.configuration.DateFrom, null) };
+            }
+            else
+            {
+                if (this.configuration.DateFrom != null)
+                {
+                    return new Output[]{ReturnOuput(ElTipoStr,
+                        this.configuration.DateFrom.Value,
+                        this.configuration.DateFrom.Value, this.configuration.DateFrom, null) };
+                }
+            }
+
+            return null;
+        }
+        #endregion
+
+        #region Recurring
         private Output[] ExecuteRecurring(DateTime TheDate, string TheTypeStepStr)
         {
             List<Output> TheExistList = new List<Output>();
@@ -273,27 +299,6 @@ namespace Schedule.Process
             return TheHourFrom;
         }
 
-        private Output[] ExecuteOnce(string ElTipoStr)
-        {
-            if ((this.configuration.DateFrom != null &&
-                this.configuration.DateStep > this.configuration.DateFrom) ||
-                this.configuration.DateFrom == null)
-            {
-                return new Output[]{ReturnOuput(ElTipoStr,
-                        this.configuration.DateStep.Value,
-                        this.configuration.DateStep.Value, this.configuration.DateFrom, null) };
-            }
-            else
-            {
-                if (this.configuration.DateFrom != null)
-                {
-                    return new Output[]{ReturnOuput(ElTipoStr,
-                        this.configuration.DateFrom.Value,
-                        this.configuration.DateFrom.Value, this.configuration.DateFrom, null) };
-                }
-            }
-
-            return null;
-        }
+        #endregion
     }
 }
