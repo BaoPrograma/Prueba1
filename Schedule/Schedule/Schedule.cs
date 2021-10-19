@@ -14,7 +14,7 @@ namespace Schedule.Process
 
         public Schedule(Configuration Laconfiguracion)
         {
-            configuration = Laconfiguracion;
+            this.configuration = Laconfiguracion;
 
             this.PrepareWeek();
         }
@@ -23,19 +23,19 @@ namespace Schedule.Process
         {
             List<DayOfWeek> WeekList = new List<DayOfWeek>();
 
-            if (configuration.WeekMonday)
+            if (this.configuration.WeekMonday)
                 WeekList.Add(DayOfWeek.Monday);
-            if (configuration.WeekTuesday)
+            if (this.configuration.WeekTuesday)
                 WeekList.Add(DayOfWeek.Tuesday);
-            if (configuration.WeekWednesday)
+            if (this.configuration.WeekWednesday)
                 WeekList.Add(DayOfWeek.Wednesday);
-            if (configuration.WeekThursday)
+            if (this.configuration.WeekThursday)
                 WeekList.Add(DayOfWeek.Thursday);
-            if (configuration.WeekFriday)
+            if (this.configuration.WeekFriday)
                 WeekList.Add(DayOfWeek.Friday);
-            if (configuration.WeekSaturday)
+            if (this.configuration.WeekSaturday)
                 WeekList.Add(DayOfWeek.Saturday);
-            if (configuration.WeekSunday)
+            if (this.configuration.WeekSunday)
                 WeekList.Add(DayOfWeek.Sunday);
 
             weekVar = WeekList.ToArray();
@@ -43,14 +43,22 @@ namespace Schedule.Process
 
         public Output[] ExecuteDateStep(DateTime TheDate)
         {
-            if (configuration.Enabled)
+            if (this.configuration.Enabled)
             {
-                return Execute(TheDate);
+                if (this.configuration.DateStep == null)
+                {
+                    throw new Exception(Global.ValidateDateConfiguration);
+                }
+
+                DateTime TheDateAux = this.configuration.DateFrom != null &&
+                    TheDate > this.configuration.DateFrom ? TheDate : this.configuration.DateFrom.Value;
+
+                return this.Execute(TheDateAux);
             }
             else
             {
                 return new Output[] {ReturnOuput("",
-                   TheDate, TheDate, configuration.DateFrom, null)};
+                   TheDate, TheDate, this.configuration.DateFrom, null)};
             }
         }
 
@@ -77,28 +85,38 @@ namespace Schedule.Process
         private Output[] Execute(DateTime TheDate)
         {
             string TheStepStr = "";
-            if (configuration.TimeType == TypeStep.Once)
+            if (this.configuration.TimeType == TypeStep.Once)
             {
                 TheStepStr = Global.once;
             }
             else
             {
-                if (configuration.TypeStep == TypeDayStep.Daily)
+                if (this.configuration.TypeStep == TypeDayStep.Daily)
                 {
                     TheStepStr = Global.every + Global.day;
                 }
                 else
                 {
-                    TheStepStr = Global.every + " " + configuration.WeekStep + " " + Global.weeks;
+                    TheStepStr = Global.every + " " + this.configuration.WeekStep + " " + Global.weeks;
                 }
             }
 
-            if (configuration.TimeType == TypeStep.Once)
+            if (this.configuration.TimeType == TypeStep.Once)
             {
                 return ExecuteOnce(TheStepStr);
             }
             else
             {
+                if (this.configuration.WeekStep < 0)
+                {
+                    throw new Exception(Global.ValidateWeeklyStep);
+                }
+
+                if (this.configuration.HourStep < 0)
+                {
+                    throw new Exception(Global.ValidateHourStep);
+                }
+
                 return ExecuteRecurring(TheDate, TheStepStr);
             }
         }
@@ -107,17 +125,17 @@ namespace Schedule.Process
         {
             List<Output> TheExistList = new List<Output>();
 
-            if (configuration.TypeStep == TypeDayStep.Daily)
+            if (this.configuration.TypeStep == TypeDayStep.Daily)
             {
                 for (DateTime EachDate = TheDate.AddDays(1); EachDate <= TheDate; EachDate = EachDate.AddDays(1))
                 {
-                    TheExistList.Add(ReturnOuput(TheTypeStepStr, EachDate, EachDate, configuration.DateFrom, null));
+                    TheExistList.Add(ReturnOuput(TheTypeStepStr, EachDate, EachDate, this.configuration.DateFrom, null));
                 }
             }
             else
             {
-                DateTime TheDateTo = configuration.DateTo != null ? configuration.DateTo.Value : DateTime.MaxValue;
-                int WeekStep = configuration.WeekStep > 0 ? configuration.WeekStep : 0;
+                DateTime TheDateTo = this.configuration.DateTo != null ? this.configuration.DateTo.Value : DateTime.MaxValue;
+                int WeekStep = this.configuration.WeekStep > 0 ? this.configuration.WeekStep : 0;
 
                 for (DateTime EachWeekDate = TheDate; EachWeekDate <= TheDateTo;
                     EachWeekDate = this.GetNexDate(EachWeekDate))
@@ -132,27 +150,20 @@ namespace Schedule.Process
 
         private DateTime GetNexDate(DateTime TheDate)
         {
-            if (configuration.WeekStep > 0)
-            {
-                if (TheDate.DayOfWeek == DayOfWeek.Monday)
-                    return TheDate.AddDays(7 * configuration.WeekStep);
-                if (TheDate.DayOfWeek == DayOfWeek.Tuesday)
-                    return TheDate.AddDays(7 * configuration.WeekStep - 1);
-                if (TheDate.DayOfWeek == DayOfWeek.Wednesday)
-                    return TheDate.AddDays(7 * configuration.WeekStep - 2);
-                if (TheDate.DayOfWeek == DayOfWeek.Thursday)
-                    return TheDate.AddDays(7 * configuration.WeekStep - 3);
-                if (TheDate.DayOfWeek == DayOfWeek.Friday)
-                    return TheDate.AddDays(7 * configuration.WeekStep - 4);
-                if (TheDate.DayOfWeek == DayOfWeek.Saturday)
-                    return TheDate.AddDays(7 * configuration.WeekStep - 5);
-                if (TheDate.DayOfWeek == DayOfWeek.Sunday)
-                    return TheDate.AddDays(7 * configuration.WeekStep - 6);
-            }
-            else
-            {
-                throw new Exception(Global.ValidateWeeklyStep);
-            }
+            if (TheDate.DayOfWeek == DayOfWeek.Monday)
+                return TheDate.AddDays(7 * this.configuration.WeekStep);
+            if (TheDate.DayOfWeek == DayOfWeek.Tuesday)
+                return TheDate.AddDays(7 * this.configuration.WeekStep - 1);
+            if (TheDate.DayOfWeek == DayOfWeek.Wednesday)
+                return TheDate.AddDays(7 * this.configuration.WeekStep - 2);
+            if (TheDate.DayOfWeek == DayOfWeek.Thursday)
+                return TheDate.AddDays(7 * this.configuration.WeekStep - 3);
+            if (TheDate.DayOfWeek == DayOfWeek.Friday)
+                return TheDate.AddDays(7 * this.configuration.WeekStep - 4);
+            if (TheDate.DayOfWeek == DayOfWeek.Saturday)
+                return TheDate.AddDays(7 * this.configuration.WeekStep - 5);
+            if (TheDate.DayOfWeek == DayOfWeek.Sunday)
+                return TheDate.AddDays(7 * this.configuration.WeekStep - 6);
 
             return TheDate;
         }
@@ -166,12 +177,12 @@ namespace Schedule.Process
                 S => WeekDaysStr = WeekDaysStr + S.ToString().ToLower() + ", ");
             WeekDaysStr = WeekDaysStr.Trim().TrimEnd(',');
 
-            string HorasDiasStr = (configuration.HourFrom != null ? configuration.HourFrom.Value.ToShortTimeString() :
+            string HorasDiasStr = (this.configuration.HourFrom != null ? this.configuration.HourFrom.Value.ToShortTimeString() :
                 new DateTime(1900, 1, 1, 0, 0, 0).ToShortTimeString()) + " and " +
-                (configuration.HourTo != null ? configuration.HourTo.Value.ToShortTimeString() :
+                (this.configuration.HourTo != null ? this.configuration.HourTo.Value.ToShortTimeString() :
                 new DateTime(1900, 1, 1, 23, 59, 0).ToShortTimeString());
 
-            string TheHourStepStr = Global.every + " " + configuration.HourStep.ToString() +
+            string TheHourStepStr = Global.every + " " + this.configuration.HourStep.ToString() +
                 " " + Global.hours;
 
             if (TheDate != null)
@@ -218,13 +229,13 @@ namespace Schedule.Process
 
             DateTime LaHoraHasta = ReturnHourTo(TheDate);
 
-            int LaHoraPaso = configuration.HourStep != null ?
-                configuration.HourStep.Value : 1;
+            int LaHoraPaso = this.configuration.HourStep != null ?
+                this.configuration.HourStep.Value : 1;
 
             for (DateTime TheHour = LaHoraDesde; TheHour <= LaHoraHasta;
                 TheHour = TheHour.AddHours(LaHoraPaso))
             {
-                TheList.Add(ReturnExitRecurringWeekly(TheTypeStr, TheDate, configuration.DateFrom, TheHour));
+                TheList.Add(ReturnExitRecurringWeekly(TheTypeStr, TheDate, this.configuration.DateFrom, TheHour));
             }
 
             return TheList.ToArray();
@@ -234,10 +245,10 @@ namespace Schedule.Process
         {
             DateTime TheDateTo = new DateTime(TheDate.Year, TheDate.Month, TheDate.Day, 23, 59, 59);
 
-            if (configuration.HourTo != null)
+            if (this.configuration.HourTo != null)
             {
-                TheDateTo = new DateTime(TheDate.Year, TheDate.Month, TheDate.Day, configuration.HourTo.Value.Hour, configuration.HourTo.Value.Minute,
-                    configuration.HourTo.Value.Second);
+                TheDateTo = new DateTime(TheDate.Year, TheDate.Month, TheDate.Day, this.configuration.HourTo.Value.Hour, this.configuration.HourTo.Value.Minute,
+                    this.configuration.HourTo.Value.Second);
             }
 
             return TheDateTo;
@@ -247,10 +258,10 @@ namespace Schedule.Process
         {
             DateTime TheHourFrom = new DateTime(TheDate.Year, TheDate.Month, TheDate.Day, 0, 0, 0);
 
-            if (configuration.HourFrom != null)
+            if (this.configuration.HourFrom != null)
             {
-                TheHourFrom = new DateTime(TheDate.Year, TheDate.Month, TheDate.Day, configuration.HourFrom.Value.Hour, configuration.HourFrom.Value.Minute,
-                    configuration.HourFrom.Value.Second);
+                TheHourFrom = new DateTime(TheDate.Year, TheDate.Month, TheDate.Day, this.configuration.HourFrom.Value.Hour, this.configuration.HourFrom.Value.Minute,
+                    this.configuration.HourFrom.Value.Second);
             }
 
             return TheHourFrom;
@@ -258,18 +269,22 @@ namespace Schedule.Process
 
         private Output[] ExecuteOnce(string ElTipoStr)
         {
-            if (configuration.DateStep == null)
-            {
-                throw new Exception(Global.ValidateDateConfiguration);
-            }
-
-            if (configuration.DateFrom != null &&
-                configuration.DateStep > configuration.DateFrom ||
-                configuration.DateFrom == null)
+            if ((this.configuration.DateFrom != null &&
+                this.configuration.DateStep > this.configuration.DateFrom) ||
+                this.configuration.DateFrom == null)
             {
                 return new Output[]{ReturnOuput(ElTipoStr,
-                        configuration.DateStep.Value,
-                        configuration.DateStep.Value, configuration.DateFrom, null) };
+                        this.configuration.DateStep.Value,
+                        this.configuration.DateStep.Value, this.configuration.DateFrom, null) };
+            }
+            else
+            {
+                if (this.configuration.DateFrom != null)
+                {
+                    return new Output[]{ReturnOuput(ElTipoStr,
+                        this.configuration.DateFrom.Value,
+                        this.configuration.DateFrom.Value, this.configuration.DateFrom, null) };
+                }
             }
 
             return null;
