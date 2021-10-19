@@ -108,14 +108,10 @@ namespace Schedule.Process
             else
             {
                 if (this.configuration.WeekStep < 0)
-                {
                     throw new Exception(Global.ValidateWeeklyStep);
-                }
 
                 if (this.configuration.HourStep < 0)
-                {
                     throw new Exception(Global.ValidateHourStep);
-                }
 
                 return ExecuteRecurring(TheDate, TheStepStr);
             }
@@ -172,18 +168,11 @@ namespace Schedule.Process
         {
             string TheDateStepStr = TheDateStep.ToString("dd/MM/yyyy");
 
-            string WeekDaysStr = " on ";
-            weekVar.ToList().ForEach(
-                S => WeekDaysStr = WeekDaysStr + S.ToString().ToLower() + ", ");
-            WeekDaysStr = WeekDaysStr.Trim().TrimEnd(',');
+            string WeekDaysStr = this.GetDayString();
 
-            string HorasDiasStr = (this.configuration.HourFrom != null ? this.configuration.HourFrom.Value.ToShortTimeString() :
-                new DateTime(1900, 1, 1, 0, 0, 0).ToShortTimeString()) + " and " +
-                (this.configuration.HourTo != null ? this.configuration.HourTo.Value.ToShortTimeString() :
-                new DateTime(1900, 1, 1, 23, 59, 0).ToShortTimeString());
+            string HourDayStr = this.GetHourDayString();
 
-            string TheHourStepStr = Global.every + " " + this.configuration.HourStep.ToString() +
-                " " + Global.hours;
+            string TheHourStepStr = Global.every + " " + this.configuration.HourStep.ToString() + " " + Global.hours;
 
             if (TheDate != null)
             {
@@ -193,10 +182,27 @@ namespace Schedule.Process
             Output TheExit = new Output();
             TheExit.OutputDate = TheDateStep;
             TheExit.Description =
-                string.Format(Global.ExitRecurringWeekly, TheTypeStepStr, WeekDaysStr, TheHourStepStr, HorasDiasStr,
+                string.Format(Global.ExitRecurringWeekly, TheTypeStepStr, WeekDaysStr, TheHourStepStr, TheHourStepStr,
                 TheDateFrom != null ? TheDateFrom.Value.ToString("dd/MM/yyyy") : "");
 
             return TheExit;
+        }
+
+        private string GetHourDayString()
+        {
+            return (this.configuration.HourFrom != null ? this.configuration.HourFrom.Value.ToShortTimeString() :
+                            new DateTime(1900, 1, 1, 0, 0, 0).ToShortTimeString()) + " and " +
+                            (this.configuration.HourTo != null ? this.configuration.HourTo.Value.ToShortTimeString() :
+                            new DateTime(1900, 1, 1, 23, 59, 0).ToShortTimeString());
+        }
+
+        private string GetDayString()
+        {
+            string WeekDaysStr = " on ";
+            weekVar.ToList().ForEach(
+                S => WeekDaysStr = WeekDaysStr + S.ToString().ToLower() + ", ");
+            WeekDaysStr = WeekDaysStr.Trim().TrimEnd(',');
+            return WeekDaysStr;
         }
 
         private Output[] ExecuteWeekly(string ElTipoStr,
