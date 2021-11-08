@@ -14,20 +14,38 @@ namespace Schedule.Config
 
         public TypeStep TimeType;
         public DateTime? DateStep;
-        public TypeDayStep? TypeStep;
         public DateTime? DateFrom;
         public DateTime? DateTo;
+
+        public TypeTimeStep? TypeRecurring;
+
+        #region recurring
         public int? HourStep;
-        public int WeekStep;
         public bool Enabled;
-        public bool WeekMonday;
-        public bool WeekTuesday;
-        public bool WeekWednesday;
-        public bool WeekThursday;
-        public bool WeekFriday;
-        public bool WeekSaturday;
-        public bool WeekSunday;
         public DateTime? HourFrom;
         public DateTime? HourTo;
+
+        public int DailyStep;
+
+        public int WeekStep;
+        public bool WeeklyMonday;
+        public bool WeeklyTuesday;
+        public bool WeeklyWednesday;
+        public bool WeeklyThursday;
+        public bool WeeklyFriday;
+        public bool WeeklySaturday;
+        public bool WeeklySunday;
+
+        public bool? MonthlyOnce;
+        public int? MonthlyOnceDay;
+        public int? MonthlyOnceMonthSteps;
+        public DailyFrequency? TypeDailyFrequency;
+
+        public bool? MonthlyMore;
+        public TypeWeekStep? MonthlyMoreWeekStep;
+        public TypeDayWeekStep? MonthlyMoreOrderDayWeekStep;
+        public int? MonthlyMoreMonthSteps;
+
+        #endregion
     }
 }
