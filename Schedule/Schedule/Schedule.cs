@@ -1,6 +1,5 @@
 ﻿using Schedule.Config;
 using Schedule.RecursosTextos;
-using Semicrol.Utilidades;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,8 +14,7 @@ namespace Schedule.Process
 
         public Schedule(Configuration TheConfiguration)
         {
-            if (TheConfiguration == null)
-                throw new ScheduleException(Global.ValidateConfiguration);
+            this.ValidateConfiguration(TheConfiguration);
 
             this.configuration = TheConfiguration;
             this.monthlyWeekVar = new List<DayOfWeek>();
@@ -28,6 +26,20 @@ namespace Schedule.Process
             {
                 this.PrepareMonthlyWeekVar();
             }
+        }
+
+        public List<DayOfWeek> MonthlyWeekVar
+        {
+            get
+            {
+                return this.monthlyWeekVar;
+            }
+        }
+
+        private void ValidateConfiguration(Configuration TheConfiguration)
+        {
+            if (TheConfiguration == null)
+                throw new ScheduleException(Global.ValidateConfiguration);
         }
 
         private void PrepareWeeklyVar()
@@ -54,42 +66,45 @@ namespace Schedule.Process
 
         private void PrepareMonthlyWeekVar()
         {
-            switch (this.configuration.MonthlyMoreOrderDayWeekStep)
-            { 
-                case TypeDayWeekStep.Day:
-                    this.monthlyWeekVar.AddRange(new DayOfWeek[] { DayOfWeek.Monday, 
-                    DayOfWeek.Tuesday, DayOfWeek.Wednesday,DayOfWeek.Thursday, 
+            if (this.monthlyWeekVar != null)
+            {
+                switch (this.configuration.MonthlyMoreOrderDayWeekStep)
+                {
+                    case TypeDayWeekStep.Day:
+                        this.monthlyWeekVar.AddRange(new DayOfWeek[] { DayOfWeek.Monday,
+                    DayOfWeek.Tuesday, DayOfWeek.Wednesday,DayOfWeek.Thursday,
                     DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday});
-                    break;
-                case TypeDayWeekStep.Monday:
-                    this.monthlyWeekVar.Add(DayOfWeek.Monday);
-                    break;
-                case TypeDayWeekStep.Tuesday:
-                    this.monthlyWeekVar.Add(DayOfWeek.Tuesday);
-                    break;
-                case TypeDayWeekStep.Wednesday:
-                    this.monthlyWeekVar.Add(DayOfWeek.Wednesday);
-                    break;
-                case TypeDayWeekStep.Thursday:
-                    this.monthlyWeekVar.Add(DayOfWeek.Thursday);
-                    break;
-                case TypeDayWeekStep.Friday:
-                    this.monthlyWeekVar.Add(DayOfWeek.Friday);
-                    break;
-                case TypeDayWeekStep.Saturday:
-                    this.monthlyWeekVar.Add(DayOfWeek.Saturday);
-                    break;
-                case TypeDayWeekStep.Sunday:
-                    this.monthlyWeekVar.Add(DayOfWeek.Sunday);
-                    break;
-                case TypeDayWeekStep.WeekDay:
-                    this.monthlyWeekVar.AddRange(new DayOfWeek[] { DayOfWeek.Monday,
+                        break;
+                    case TypeDayWeekStep.Monday:
+                        this.monthlyWeekVar.Add(DayOfWeek.Monday);
+                        break;
+                    case TypeDayWeekStep.Tuesday:
+                        this.monthlyWeekVar.Add(DayOfWeek.Tuesday);
+                        break;
+                    case TypeDayWeekStep.Wednesday:
+                        this.monthlyWeekVar.Add(DayOfWeek.Wednesday);
+                        break;
+                    case TypeDayWeekStep.Thursday:
+                        this.monthlyWeekVar.Add(DayOfWeek.Thursday);
+                        break;
+                    case TypeDayWeekStep.Friday:
+                        this.monthlyWeekVar.Add(DayOfWeek.Friday);
+                        break;
+                    case TypeDayWeekStep.Saturday:
+                        this.monthlyWeekVar.Add(DayOfWeek.Saturday);
+                        break;
+                    case TypeDayWeekStep.Sunday:
+                        this.monthlyWeekVar.Add(DayOfWeek.Sunday);
+                        break;
+                    case TypeDayWeekStep.WeekDay:
+                        this.monthlyWeekVar.AddRange(new DayOfWeek[] { DayOfWeek.Monday,
                     DayOfWeek.Tuesday, DayOfWeek.Wednesday,DayOfWeek.Thursday,
                     DayOfWeek.Friday });
-                    break;
-                case TypeDayWeekStep.WeekendDay:
-                    this.monthlyWeekVar.AddRange(new DayOfWeek[] { DayOfWeek.Saturday, DayOfWeek.Sunday });
-                    break;
+                        break;
+                    case TypeDayWeekStep.WeekendDay:
+                        this.monthlyWeekVar.AddRange(new DayOfWeek[] { DayOfWeek.Saturday, DayOfWeek.Sunday });
+                        break;
+                }
             }
         }
 
@@ -125,11 +140,11 @@ namespace Schedule.Process
 
         private Output ReturnOuput(string TheWeeStepStr, DateTime TheDateStep, DateTime TheHourStep, DateTime? TheDateFrom, DateTime? TheHour)
         {
-            string TheDateStepStr = TheDateStep.ToString("dd/MM/yyyy");
+            string TheDateStepStr = TheDateStep.ToShortDateString();
 
             if (TheHourStep.TimeOfDay > new TimeSpan(00, 00, 00))
             {
-                TheDateStepStr += " " + Global.at + " " + TheHourStep.ToString("HH:mm");
+                TheDateStepStr += " " + Global.at + " " + TheHourStep.ToShortTimeString();
             }
 
             Output TheExit = new Output();
@@ -137,8 +152,8 @@ namespace Schedule.Process
             TheExit.Description =
                 string.Format(Global.Output, TheWeeStepStr, TheDateStepStr) +
                 (TheDateFrom != null ? " " + string.Format(Global.StartingOn
-                , TheDateFrom.Value.ToString("dd/MM/yyyy")) : "") +
-                " " + (TheHour != null ? TheHour.Value.ToString("HH:mm") : "00:00");
+                , TheDateFrom.Value.ToShortDateString()) : "") +
+                " " + (TheHour != null ? TheHour.Value.ToShortTimeString() : "00:00");
 
             return TheExit;
         }
@@ -241,25 +256,9 @@ namespace Schedule.Process
         #region Once
         private Output[] ExecuteOnce(string TheTypeStr)
         {
-            if ((this.configuration.DateFrom != null &&
-                this.configuration.DateStep > this.configuration.DateFrom) ||
-                this.configuration.DateFrom == null)
-            {
-                return new Output[]{ReturnOuput(TheTypeStr,
+            return new Output[]{ReturnOuput(TheTypeStr,
                         this.configuration.DateStep.Value,
                         this.configuration.DateStep.Value, this.configuration.DateFrom, null) };
-            }
-            else
-            {
-                if (this.configuration.DateFrom != null)
-                {
-                    return new Output[]{ReturnOuput(TheTypeStr,
-                        this.configuration.DateFrom.Value,
-                        this.configuration.DateFrom.Value, this.configuration.DateFrom, null) };
-                }
-            }
-
-            return null;
         }
         #endregion
 
@@ -335,12 +334,9 @@ namespace Schedule.Process
 
             DateTime TheDateTo = this.configuration.DateTo != null ? this.configuration.DateTo.Value : DateTime.MaxValue;
                         
-            Mes TheMonth = new Mes(TheDate);
-
-            DateTime TheFirstDayWeek = new DateTime();
             int IndexDayWeek = 1;
 
-            DateTime? TheDay = this.GetDayInMonth(ref TheMonth, ref TheFirstDayWeek, ref IndexDayWeek);
+            DateTime? TheDay = this.GetDayInMonth(TheDate, IndexDayWeek);
 
             TheDay = TheDay == null ? TheDate : TheDay; 
 
@@ -348,7 +344,7 @@ namespace Schedule.Process
                 EachWeekDate = this.GetNexDate(EachWeekDate))
             {
                 TheExistList.AddRange(
-                    this.ExecuteRecurringMonthlyWeekHours(TheTypeStepStr, TheDateTo, TheMonth, EachWeekDate));
+                    this.ExecuteRecurringMonthlyWeekHours(TheTypeStepStr, TheDateTo, EachWeekDate));
             }
         }
 
@@ -362,13 +358,13 @@ namespace Schedule.Process
         }
 
         private Output[] ExecuteRecurringMonthlyWeekHours(string TheTypeStepStr, DateTime TheDateTo, 
-            Mes TheMonth, DateTime TheFirstDayWeek)
+            DateTime TheFirstDayWeek)
         {
             List<Output> TheList = new List<Output>();
 
             DateTime TheWeekDay = this.GetWeekDay(TheFirstDayWeek);
 
-            for (int IndexWeek = 1; IndexWeek <= TheMonth.NumeroSemanas; IndexWeek++)
+            for (int IndexWeek = 1; IndexWeek <= 5; IndexWeek++)
             {
                 if (IndexWeek == Convert.ToInt32(this.configuration.MonthlyMoreWeekStep))
                 {
@@ -401,7 +397,8 @@ namespace Schedule.Process
         {
             List<Output> TheList = new List<Output>();
 
-            DateTime TheDayfromWeek = this.GetWeekend(new Mes(TheWeekDay).PrimerDia);
+            DateTime TheDayfromWeek = this.GetWeekend(
+                new DateTime(TheWeekDay.Year, TheWeekDay.Month, 1));
             DateTime TheDayToWeek = this.GetEndWeek(TheWeekDay);
 
             for (DateTime EachDay = TheDayfromWeek; EachDay <= TheDayToWeek;
@@ -497,13 +494,17 @@ namespace Schedule.Process
                 case TypeWeekStep.First:
                     return TheFirstDayWeek;
                 case TypeWeekStep.Second:
-                    return this.GetFirstDayWeek((new Mes(TheFirstDayWeek)).PrimerDia.AddDays(7));
+                    return this.GetFirstDayWeek(
+                        (new DateTime(TheFirstDayWeek.Year, TheFirstDayWeek.Month, 1)).AddDays(7));
                 case TypeWeekStep.Third:
-                    return this.GetFirstDayWeek((new Mes(TheFirstDayWeek)).PrimerDia.AddDays(14));
+                    return this.GetFirstDayWeek(
+                        (new DateTime(TheFirstDayWeek.Year, TheFirstDayWeek.Month, 1)).AddDays(14));
                 case TypeWeekStep.Fourth:
-                    return this.GetFirstDayWeek((new Mes(TheFirstDayWeek)).PrimerDia.AddDays(21));
+                    return this.GetFirstDayWeek(
+                        (new DateTime(TheFirstDayWeek.Year, TheFirstDayWeek.Month, 1)).AddDays(21));
                 case TypeWeekStep.Last:
-                    return this.GetFirstDayWeek((new Mes(TheFirstDayWeek)).PrimerDia.AddDays(28));
+                    return this.GetFirstDayWeek(
+                        (new DateTime(TheFirstDayWeek.Year, TheFirstDayWeek.Month, 1)).AddDays(28));
             }
 
             return TheFirstDayWeek;
@@ -555,43 +556,46 @@ namespace Schedule.Process
             return TheDay;
         }
 
-        private DateTime? GetDayInMonth(ref Mes TheMonth, ref DateTime TheFirstDayWeek, ref int IndexDayWeek)
+        private DateTime? GetDayInMonth(DateTime TheDay, int IndexDayWeek)
         {
-            DateTime? TheDay = null;
-            for (int IndexWeek = 1; IndexWeek < TheMonth.NumeroSemanas; IndexWeek++)
+            DateTime TheFirstDay = new DateTime(TheDay.Year, TheDay.Month, 1);
+            DateTime? TheAuxDay = null;
+
+            for (int IndexWeek = 1; IndexWeek < 5; IndexWeek++)
             {
                 if (IndexWeek == Convert.ToInt32(this.configuration.MonthlyMoreWeekStep))
                 {
-                    TheFirstDayWeek = this.GetFirstDayWeek(TheMonth.PrimerDia);
+                    TheFirstDay = this.GetFirstDayWeek(TheFirstDay);
 
-                    for (DateTime IndexDay = TheFirstDayWeek; IndexDay <= TheFirstDayWeek.AddDays(6);
+                    for (DateTime IndexDay = TheFirstDay; IndexDay <= TheFirstDay.AddDays(6);
                   IndexDay = IndexDay.AddDays(1))
                     {
-                        if (IndexDay.Month != TheMonth.Ordinal)
+                        if (IndexDay.Month != TheFirstDay.Month)
                         {
                             continue;
                         }
 
-                        TheDay = this.GetDayWeek(TheFirstDayWeek);
+                        TheAuxDay = this.GetDayWeek(TheFirstDay);
 
-                        if (TheDay != null)
+                        if (TheAuxDay != null)
                         {
-                            TheDay = IndexDay;
+                            TheAuxDay = IndexDay;
                             break;
                         }
                         IndexDayWeek++;
                     }
-                    if (TheDay != null)
+                    if (TheAuxDay != null)
                     {
                         break;
                     }
                 }
             }
-            if (TheDay == null)
+            if (TheAuxDay == null)
             {
-                TheFirstDayWeek = this.GetFirstDayWeek(TheMonth.UltimoDia);
+                TheFirstDay = this.GetFirstDayWeek(
+                    TheFirstDay.AddDays(DateTime.DaysInMonth(TheFirstDay.Year, TheFirstDay.Month)));
 
-                TheDay = this.GetDayWeek(TheFirstDayWeek);
+                TheAuxDay = this.GetDayWeek(TheFirstDay);
             }
 
             return TheDay;
@@ -772,37 +776,8 @@ namespace Schedule.Process
             return TheDate;
         }
 
-        private DateTime GetNexDateInWeek(DateTime TheDate)
-        {
-            switch (this.configuration.MonthlyMoreOrderDayWeekStep)
-            {
-                case TypeDayWeekStep.Monday:
-                    return TheDate;
-                case TypeDayWeekStep.Tuesday:
-                    return TheDate.AddDays(1);
-                case TypeDayWeekStep.Wednesday:
-                    return TheDate.AddDays(2);
-                case TypeDayWeekStep.Thursday:
-                    return TheDate.AddDays(3);
-                case TypeDayWeekStep.Friday:
-                    return TheDate.AddDays(4);
-                case TypeDayWeekStep.Saturday:
-                    return TheDate.AddDays(5);
-                case TypeDayWeekStep.Sunday:
-                    return TheDate.AddDays(6);
-                case TypeDayWeekStep.Day:
-                    int TheIndex = 0;
-                    Mes TheMonth = new Mes(TheDate);
-                    return this.GetDayInMonth(ref TheMonth, ref TheDate, ref TheIndex).Value;
-            }
-
-            return TheDate;
-        }
-
         private Output ReturnExitRecurringMonthtlyWeekly(string TheTypeStepStr, DateTime TheDateStep, DateTime? TheDateFrom, DateTime? TheDate)
         {
-            //string TheDateStepStr = TheDateStep.ToString("dd/MM/yyyy");
-
             string HourDayStr = this.GetHourDayString();
 
             string TheHourStepStr = "";
@@ -827,7 +802,7 @@ namespace Schedule.Process
                 TheExit.OutputDate = TheDateStep;
                 TheExit.Description =
                     string.Format(Global.ExitRecurring, TheTypeStepStr, TheHourStepStr, HourDayStr,
-                    TheDateFrom != null ? TheDateFrom.Value.ToString("dd/MM/yyyy") : "");
+                    TheDateFrom != null ? TheDateFrom.Value.ToShortDateString() : "");
             }
             else
             {
@@ -836,14 +811,14 @@ namespace Schedule.Process
                     TheExit.OutputDate = TheDateStep;
                     TheExit.Description =
                         string.Format(Global.ExitRecurring, TheTypeStepStr, TheHourStepStr, HourDayStr,
-                        TheDateFrom != null ? TheDateFrom.Value.ToString("dd/MM/yyyy") : "");
+                        TheDateFrom != null ? TheDateFrom.Value.ToShortDateString() : "");
                 }
                 else if (this.configuration.MonthlyMore == true)
                 {
                     TheExit.OutputDate = TheDateStep;
                     TheExit.Description =
                         string.Format(Global.ExitRecurring, TheTypeStepStr, TheHourStepStr, HourDayStr,
-                        TheDateFrom != null ? TheDateFrom.Value.ToString("dd/MM/yyyy") : "");
+                        TheDateFrom != null ? TheDateFrom.Value.ToShortDateString() : "");
                 }
             }
 
