@@ -181,7 +181,10 @@ namespace Schedule.Process
                 throw new ScheduleException(Global.ValidateRecurringFrequency);
 
             if (this.configuration.MonthlyOnce == true && this.configuration.MonthlyOnceMonthSteps == null)
-                throw new ScheduleException(Global.ValidateMonthlyOnceMonthFrequency);
+                throw new ScheduleException(Global.ValidateMonthlyConfiguration);
+
+            if (this.configuration.MonthlyMore == true && this.configuration.MonthlyMoreMonthSteps == null)
+                throw new ScheduleException(Global.ValidateMonthlyConfiguration);
         }
 
         private string GetStepDescription()
@@ -308,8 +311,6 @@ namespace Schedule.Process
 
         private void ExecuteRecurringMonthly(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList)
         {
-            this.ValidateMonthlyRecurring();
-
             DateTime TheDateTo = this.configuration.DateTo != null ? this.configuration.DateTo.Value : DateTime.MaxValue;
 
             if (this.configuration.MonthlyOnce == true)
@@ -320,12 +321,6 @@ namespace Schedule.Process
             {
                 this.ExecuteRecurringMonthlyMore(TheDate, TheTypeStepStr, TheExistList);
             }
-        }
-
-        private void ValidateMonthlyRecurring()
-        {
-            if (this.configuration.MonthlyMore == null && this.configuration.MonthlyOnce == null)
-                throw new ScheduleException(Global.ValidateMonthlyConfiguration);
         }
 
         private void ExecuteRecurringMonthlyMore(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList)
@@ -399,6 +394,12 @@ namespace Schedule.Process
 
             DateTime TheDayfromWeek = this.GetWeekend(
                 new DateTime(TheWeekDay.Year, TheWeekDay.Month, 1));
+
+            if (this.configuration.DateFrom > TheDayfromWeek)
+            {
+                TheDayfromWeek = this.configuration.DateFrom.Value;
+            }
+
             DateTime TheDayToWeek = this.GetEndWeek(TheWeekDay);
 
             for (DateTime EachDay = TheDayfromWeek; EachDay <= TheDayToWeek;
@@ -608,7 +609,8 @@ namespace Schedule.Process
             DateTime TheNewDate;
             if (TheDate.Day > this.configuration.MonthlyOnceDay)
             {
-                TheNewDate = new DateTime(TheDate.Year, TheDate.AddMonths(1).Month, this.configuration.MonthlyOnceDay.Value, TheDate.Hour, TheDate.Minute, TheDate.Second);
+                TheNewDate = new DateTime(TheDate.Year, TheDate.AddMonths(
+                    this.configuration.MonthlyOnceMonthSteps.Value).Month, this.configuration.MonthlyOnceDay.Value, TheDate.Hour, TheDate.Minute, TheDate.Second);
             }
             else
             {
