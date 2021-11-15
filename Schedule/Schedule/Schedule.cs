@@ -216,19 +216,35 @@ namespace Schedule.Process
             }
             else
             {
+                string MonthStr = "";
+               
                 if (this.configuration.MonthlyOnce == true)
                 {
-                    TheStepStr = Global.day + " " + 
-                        this.configuration.MonthlyOnceDay.Value.ToString() +
-                        " " + Global.of + " " + Global.every + " " +
-                        this.configuration.MonthlyOnceMonthSteps.Value.ToString() + " " + Global.months;
+                    if (this.configuration.MonthlyOnceMonthSteps > 1)
+                    {
+                        MonthStr = this.configuration.MonthlyOnceMonthSteps.Value.ToString() + " " + Global.months;
+                    }
+                    else
+                    {
+                        MonthStr = Global.month;
+                    }
+
+                    TheStepStr = Global.day + " " + this.configuration.MonthlyOnceDay.Value.ToString() +
+                        " " + Global.of + " " + Global.every + " " + MonthStr;
                 }
                 else if (this.configuration.MonthlyMore == true)
                 {
-                    TheStepStr = Global.the + " " +
-                        this.configuration.MonthlyMoreWeekStep.ToString().ToLower() + " " +
-                        this.configuration.MonthlyMoreOrderDayWeekStep.ToString().ToLower() + " " + Global.of + " " + Global.every + " " + 
-                        this.configuration.MonthlyMoreMonthSteps + " " + Global.months;
+                    if (this.configuration.MonthlyMoreMonthSteps > 1)
+                    {
+                        MonthStr = this.configuration.MonthlyMoreMonthSteps.Value.ToString() + " " + Global.months;
+                    }
+                    else
+                    {
+                        MonthStr = Global.month;
+                    }
+
+                    TheStepStr = Global.the + " " + this.configuration.MonthlyMoreWeekStep.ToString().ToLower() + " " +
+                        this.configuration.MonthlyMoreOrderDayWeekStep.ToString().ToLower() + " " + Global.of + " " + Global.every + " " + MonthStr;
                 }
             }
 
@@ -250,8 +266,15 @@ namespace Schedule.Process
                     DaysString = DaysString + this.weeklyVar[Index].ToString() + " and ";
             }
 
-            TheStepStr = Global.every + " " + this.configuration.WeekStep + " " + Global.weeks +
-                " " + Global.on + " " + DaysString;
+            if (this.configuration.WeekStep > 1)
+            {
+                TheStepStr = Global.every + " " + this.configuration.WeekStep.ToString() + " " + Global.weeks +
+                    " " + Global.on + " " + DaysString;
+            }
+            else
+            {
+                TheStepStr = Global.every + " " + Global.week + " " + Global.on + " " + DaysString;
+            }
 
             return TheStepStr;
         }
@@ -768,7 +791,17 @@ namespace Schedule.Process
             }
             else if (this.configuration.MonthlyOnce == true)
             {
+                int CurrentDay = this.configuration.MonthlyOnceDay.Value;
+
                 TheDate = TheDate.AddMonths(this.configuration.MonthlyOnceMonthSteps.Value);
+
+                while (this.configuration.MonthlyOnceDay.Value == 31 && 
+                    DateTime.DaysInMonth(TheDate.Year, TheDate.Month) != 31)
+                {
+                    TheDate = TheDate.AddMonths(this.configuration.MonthlyOnceMonthSteps.Value);
+                }
+
+                TheDate = new DateTime(TheDate.Year, TheDate.Month, CurrentDay);
             }
             else if (this.configuration.MonthlyMore == true)
             {
@@ -790,7 +823,7 @@ namespace Schedule.Process
             }
             else
             {
-                TheHourStepStr = Global.every + " " + this.configuration.HourStep.ToString() + " " + Global.hour;
+                TheHourStepStr = Global.every + " " + Global.hour;
             }
 
             if (TheDate != null)
