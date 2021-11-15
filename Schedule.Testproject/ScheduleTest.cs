@@ -119,9 +119,8 @@ namespace Schedule.Test
             Assert.Equal(Global.ValidateDateConfiguration, caughtException.Message);
         }
 
-
         [Fact]
-        public void Execute_recurring_should_set_when_occurs()
+        public void Execute_recurring_daily_should_set_frequency_when_occurs()
         {
             // Arrange
             this.configuration.Enabled = true;
@@ -139,7 +138,6 @@ namespace Schedule.Test
             //Assert
             Assert.True(Global.ValidateRecurringFrequency == caughtException.Message);
         }
-
 
         [Fact]
         public void Execute_recurring_daily_HourStep_should_be_higher_than_0()
@@ -190,20 +188,12 @@ namespace Schedule.Test
                 this.GenerateOutputDailyDescription(new DateTime(2021, 1, 4)));
         }
 
-        private string GenerateOutputDailyDescription(DateTime LaFecha)
-        {
-            return
-                (string.Format(Global.Output, Global.every + " " + Global.day,
-                (LaFecha.ToShortDateString()) + " " + Global.at + " " + this.configuration.DateFrom.Value.ToShortTimeString())) + " " +
-                string.Format(Global.StartingOn, this.configuration.DateFrom.Value.ToShortDateString() + " " +
-                this.configuration.DateFrom.Value.ToShortTimeString());
-        }
-
         [Fact]
-        public void Execute_recurring_daily_more_1_day()
+        public void Execute_recurring_daily_more_one_day()
         {
             // Arrange
             this.configuration.Enabled = true;
+            this.configuration.TypeRecurring = TypeTimeStep.Daily;
             this.configuration.TimeType = TypeStep.Recurring;
             this.configuration.DateFrom = new DateTime(2021, 1, 1, 14, 0, 0);
             this.configuration.DateStep = new DateTime(2021, 1, 1, 14, 0, 0);
@@ -218,19 +208,31 @@ namespace Schedule.Test
 
             //Assert
             Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 2, 14, 0, 0));
-            Assert.True(TheOutput[0].Description == this.GenerateOutputDailyMore1dayDescription(new DateTime(2021, 1, 2)));
+            Assert.True(TheOutput[0].Description ==
+                this.GenerateOutputDailyDescription(new DateTime(2021, 1, 2)));
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 4, 14, 0, 0));
-            Assert.True(TheOutput[1].Description == this.GenerateOutputDailyMore1dayDescription(new DateTime(2021, 1, 4)));
+            Assert.True(TheOutput[1].Description ==
+                this.GenerateOutputDailyDescription(new DateTime(2021, 1, 4)));
         }
 
-
-        private string GenerateOutputDailyMore1dayDescription(DateTime LaFecha)
+        private string GenerateOutputDailyDescription(DateTime LaFecha)
         {
-            return
-                (string.Format(Global.Output, Global.every + " " + this.configuration.DailyStep.ToString() + " " + Global.days,
-                (LaFecha.ToShortDateString()) + " " + Global.at + " " + this.configuration.DateFrom.Value.ToShortTimeString())) + " " +
-                string.Format(Global.StartingOn, this.configuration.DateFrom.Value.ToShortDateString() + " " +
-                this.configuration.DateFrom.Value.ToShortTimeString());
+            if (this.configuration.DailyStep > 1)
+            {
+                return
+                    (string.Format(Global.Output, Global.every + " " + this.configuration.DailyStep.ToString() + " " + Global.days,
+                    (LaFecha.ToShortDateString()) + " " + Global.at + " " + this.configuration.DateFrom.Value.ToShortTimeString())) + " " +
+                    string.Format(Global.StartingOn, this.configuration.DateFrom.Value.ToShortDateString() + " " +
+                    this.configuration.DateFrom.Value.ToShortTimeString());
+            }
+            else
+            {
+                return
+                    (string.Format(Global.Output, Global.every + " " + Global.day,
+                    (LaFecha.ToShortDateString()) + " " + Global.at + " " + this.configuration.DateFrom.Value.ToShortTimeString())) + " " +
+                    string.Format(Global.StartingOn, this.configuration.DateFrom.Value.ToShortDateString() + " " +
+                    this.configuration.DateFrom.Value.ToShortTimeString());
+            }
         }
 
         [Fact]
@@ -256,11 +258,84 @@ namespace Schedule.Test
             //Assert
             Assert.True(Global.ValidateWeeklyStep == caughtException.Message);
         }
-      
+                
+        [Fact]
+        public void Execute_recurring_Weekly_per_one_week()
+        {
+            List<DayOfWeek> TheWeek = new List<DayOfWeek>();
+            TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Monday });
+
+            // Arrange
+            this.configuration.Enabled = true;
+            this.configuration.DateStep = new DateTime(2021, 1, 1);
+            this.configuration.DateFrom = new DateTime(2021, 1, 1);
+            this.configuration.DateTo = new DateTime(2021, 1, 14);
+            this.configuration.TimeType = TypeStep.Recurring;
+            this.configuration.TypeRecurring = TypeTimeStep.Weekly;
+            this.configuration.WeekStep = 1;
+            this.configuration.HourStep = 2;
+            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.configuration.WeeklyMonday = true;
+
+            this.process = new Process.Schedule(this.configuration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+
+            string TheOutputDescruipction = string.Format(Global.ExitRecurring, Global.every + " " + Global.week + " " + Global.on + " " + Global.Monday, Global.every + " " + this.configuration.HourStep.ToString() + " " + Global.hours, this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
+                  this.configuration.HourTo.Value.ToShortTimeString(), this.configuration.DateFrom.Value.ToShortDateString());
+
+            //Assert
+            Assert.True(TheOutput.Length == 2);
+            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 4, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == TheOutput[1].Description && 
+                TheOutput[0].Description == TheOutputDescruipction);
+            Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 11, 8, 0, 0));
+        }
+
+
+        [Fact]
+        public void Execute_recurring_Weekly_per_one_hour()
+        {
+            List<DayOfWeek> TheWeek = new List<DayOfWeek>();
+            TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Monday });
+
+            // Arrange
+            this.configuration.Enabled = true;
+            this.configuration.DateStep = new DateTime(2021, 1, 1);
+            this.configuration.DateFrom = new DateTime(2021, 1, 1);
+            this.configuration.DateTo = new DateTime(2021, 1, 14);
+            this.configuration.TimeType = TypeStep.Recurring;
+            this.configuration.TypeRecurring = TypeTimeStep.Weekly;
+            this.configuration.WeekStep = 1;
+            this.configuration.HourStep = 1;
+            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.configuration.WeeklyMonday = true;
+
+            this.process = new Process.Schedule(this.configuration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+
+            string TheOutputDescruipction = string.Format(Global.ExitRecurring, Global.every + " " + Global.week + " " + Global.on + " " + Global.Monday, Global.every + " " + Global.hour, this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
+                  this.configuration.HourTo.Value.ToShortTimeString(), this.configuration.DateFrom.Value.ToShortDateString());
+
+            //Assert
+            Assert.True(TheOutput.Length == 2);
+            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 4, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == TheOutput[1].Description &&
+                TheOutput[0].Description == TheOutputDescruipction);
+            Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 11, 8, 0, 0));
+        }
+
         [Theory]
         [InlineData(8, 12)]
         [InlineData(10, 14)]
-        public void Execute_recurring_Weekly(int HourFrom, int HourTo)
+        [InlineData(15, 19)]
+        [InlineData(19, 23)]
+        public void Execute_recurring_Weekly_per_days_and_hours(int HourFrom, int HourTo)
         {
             List<DayOfWeek> TheWeek = new List<DayOfWeek>();
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday });
@@ -291,27 +366,31 @@ namespace Schedule.Test
 
             //Assert
             Assert.True(TheOutput.Length == 6);
-            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 1,
-                this.configuration.HourFrom.Value.Hour, 0, 0));
-            Assert.True(TheOutput[0].Description == this.GenerateWeeklyOutput(TheWeek));
-            Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 1,
-                this.configuration.HourFrom.Value.Hour + this.configuration.HourStep.Value, 0, 0));
-            Assert.True(TheOutput[1].Description == this.GenerateWeeklyOutput(TheWeek));
-            Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 1,
-                this.configuration.HourFrom.Value.Hour + this.configuration.HourStep.Value + 2, 0, 0));
-            Assert.True(TheOutput[2].Description == this.GenerateWeeklyOutput(TheWeek));
-            Assert.True(TheOutput[3].OutputDate.Value == new DateTime(2021, 1, 2,
-                this.configuration.HourFrom.Value.Hour, 0, 0));
-            Assert.True(TheOutput[4].Description == this.GenerateWeeklyOutput(TheWeek));
-            Assert.True(TheOutput[4].OutputDate.Value == new DateTime(2021, 1, 2,
-                this.configuration.HourFrom.Value.Hour + this.configuration.HourStep.Value, 0, 0));
-            Assert.True(TheOutput[4].Description == this.GenerateWeeklyOutput(TheWeek));
-            Assert.True(TheOutput[5].OutputDate.Value == new DateTime(2021, 1, 2,
-                this.configuration.HourFrom.Value.Hour + this.configuration.HourStep.Value + 2, 0, 0));
-            Assert.True(TheOutput[5].Description == this.GenerateWeeklyOutput(TheWeek));
+            this.GenerateWeeklyRecurringOutput(TheWeek, TheOutput);
         }
 
-      
+        private void GenerateWeeklyRecurringOutput(List<DayOfWeek> TheWeek, Output[] TheOutput)
+        {
+            string TheOutputDescription = this.GenerateWeeklyOutput(TheWeek);
+
+            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 1,
+                this.configuration.HourFrom.Value.Hour, 0, 0));
+            Assert.True(TheOutput[0].Description == TheOutput[1].Description &&
+                TheOutput[1].Description == TheOutput[2].Description &&
+                TheOutput[2].Description == TheOutput[3].Description &&
+                TheOutput[4].Description == TheOutput[5].Description && TheOutput[0].Description == TheOutputDescription);
+            Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 1,
+                this.configuration.HourFrom.Value.Hour + this.configuration.HourStep.Value, 0, 0));
+            Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 1,
+                this.configuration.HourFrom.Value.Hour + this.configuration.HourStep.Value + 2, 0, 0));
+            Assert.True(TheOutput[3].OutputDate.Value == new DateTime(2021, 1, 2,
+                this.configuration.HourFrom.Value.Hour, 0, 0));
+            Assert.True(TheOutput[4].OutputDate.Value == new DateTime(2021, 1, 2,
+                this.configuration.HourFrom.Value.Hour + this.configuration.HourStep.Value, 0, 0));
+            Assert.True(TheOutput[5].OutputDate.Value == new DateTime(2021, 1, 2,
+                this.configuration.HourFrom.Value.Hour + this.configuration.HourStep.Value + 2, 0, 0));
+        }
+
         [Theory]
         [InlineData(DayOfWeek.Monday)]
         [InlineData(DayOfWeek.Tuesday)]
@@ -320,7 +399,7 @@ namespace Schedule.Test
         [InlineData(DayOfWeek.Friday)]
         [InlineData(DayOfWeek.Saturday)]
         [InlineData(DayOfWeek.Sunday)]
-        public void Execute_recurring_Weekly_per_day(DayOfWeek TheDay)
+        public void Execute_recurring_Weekly_per_each_day(DayOfWeek TheDay)
         {
             List<DayOfWeek> TheWeek = new List<DayOfWeek>();
             TheWeek.AddRange(new DayOfWeek[] { TheDay });
@@ -355,7 +434,7 @@ namespace Schedule.Test
         }
 
         [Fact]       
-        public void Execute_recurring_Weekly_saturady()
+        public void Execute_recurring_Weekly_saturady_begin()
         {
             List<DayOfWeek> TheWeek = new List<DayOfWeek>();
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Saturday });
@@ -378,18 +457,20 @@ namespace Schedule.Test
             //Act
             Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
 
+            string TheOutputDescription = this.GenerateWeeklyOutputPerDay(DayOfWeek.Saturday);
+
             //Assert
             Assert.True(TheOutput.Length == 3);
             Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 2, 8, 0, 0));
-            Assert.True(TheOutput[0].Description == this.GenerateWeeklyOutputPerDay(DayOfWeek.Saturday));
+            Assert.True(TheOutput[0].Description == TheOutput[1].Description &&
+                TheOutput[1].Description == TheOutput[2].Description && TheOutput[0].Description == TheOutputDescription);
+            Assert.True(TheOutput[0].Description == TheOutputDescription);
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 16, 8, 0, 0));
-            Assert.True(TheOutput[1].Description == this.GenerateWeeklyOutputPerDay(DayOfWeek.Saturday));
             Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 30, 8, 0, 0));
-            Assert.True(TheOutput[2].Description == this.GenerateWeeklyOutputPerDay(DayOfWeek.Saturday));
         }
 
         [Fact]
-        public void Execute_recurring_Weekly_sunday()
+        public void Execute_recurring_Weekly_sunday_begin()
         {
             List<DayOfWeek> TheWeek = new List<DayOfWeek>();
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Sunday });
@@ -412,18 +493,19 @@ namespace Schedule.Test
             //Act
             Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
 
+            string TheOutputDescription = this.GenerateWeeklyOutputPerDay(DayOfWeek.Sunday);
+
             //Assert
             Assert.True(TheOutput.Length == 3);
             Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 3, 8, 0, 0));
-            Assert.True(TheOutput[0].Description == this.GenerateWeeklyOutputPerDay(DayOfWeek.Sunday));
+            Assert.True(TheOutput[0].Description == TheOutput[1].Description &&
+                TheOutput[1].Description == TheOutput[2].Description && TheOutput[0].Description == TheOutputDescription);
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 17, 8, 0, 0));
-            Assert.True(TheOutput[1].Description == this.GenerateWeeklyOutputPerDay(DayOfWeek.Sunday));
             Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 31, 8, 0, 0));
-            Assert.True(TheOutput[2].Description == this.GenerateWeeklyOutputPerDay(DayOfWeek.Sunday));
         }
 
         [Fact]
-        public void Execute_recurring_Weekly_thursday()
+        public void Execute_recurring_Weekly_thursday_begin()
         {
             List<DayOfWeek> TheWeek = new List<DayOfWeek>();
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Thursday });
@@ -446,16 +528,17 @@ namespace Schedule.Test
             //Act
             Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
 
+            string TheOutputDescription = this.GenerateWeeklyOutputPerDay(DayOfWeek.Thursday);
+
             //Assert
             Assert.True(TheOutput.Length == 2);
             Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 7, 8, 0, 0));
-            Assert.True(TheOutput[0].Description == this.GenerateWeeklyOutputPerDay(DayOfWeek.Thursday));
+            Assert.True(TheOutput[0].Description == TheOutput[1].Description && TheOutput[0].Description == TheOutputDescription);
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 21, 8, 0, 0));
-            Assert.True(TheOutput[1].Description == this.GenerateWeeklyOutputPerDay(DayOfWeek.Thursday));
         }
 
         [Fact]
-        public void Execute_recurring_Weekly_wednesday()
+        public void Execute_recurring_Weekly_wednesday_begin()
         {
             List<DayOfWeek> TheWeek = new List<DayOfWeek>();
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Wednesday });
@@ -478,17 +561,17 @@ namespace Schedule.Test
             //Act
             Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
 
+            string TheOutputDescription = this.GenerateWeeklyOutputPerDay(DayOfWeek.Wednesday);
+
             //Assert
             Assert.True(TheOutput.Length == 2);
             Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 6, 8, 0, 0));
-            Assert.True(TheOutput[0].Description == this.GenerateWeeklyOutputPerDay(DayOfWeek.Wednesday));
+            Assert.True(TheOutput[0].Description == TheOutput[1].Description && TheOutput[0].Description == TheOutputDescription);
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 20, 8, 0, 0));
-            Assert.True(TheOutput[1].Description == this.GenerateWeeklyOutputPerDay(DayOfWeek.Wednesday));
         }
 
-
         [Fact]
-        public void Execute_recurring_Weekly_tuesday()
+        public void Execute_recurring_Weekly_tuesday_begin()
         {
             List<DayOfWeek> TheWeek = new List<DayOfWeek>();
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Tuesday });
@@ -511,12 +594,13 @@ namespace Schedule.Test
             //Act
             Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
 
+            string TheOutputDescription = this.GenerateWeeklyOutputPerDay(DayOfWeek.Tuesday);
+
             //Assert
             Assert.True(TheOutput.Length == 2);
             Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 5, 8, 0, 0));
-            Assert.True(TheOutput[0].Description == this.GenerateWeeklyOutputPerDay(DayOfWeek.Tuesday));
+            Assert.True(TheOutput[0].Description == TheOutput[1].Description && TheOutput[0].Description == TheOutputDescription);
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 19, 8, 0, 0));
-            Assert.True(TheOutput[1].Description == this.GenerateWeeklyOutputPerDay(DayOfWeek.Tuesday));
         }
 
         private void CheckOutputWeekly(Output[] TheOutput, DayOfWeek TheDay)
@@ -562,7 +646,7 @@ namespace Schedule.Test
             string TheHoursStr = "";
             if (this.configuration.HourStep > 1)
             {
-                TheHoursStr = Global.hours;
+                TheHoursStr = this.configuration.HourStep.ToString() + " " + Global.hours;
             }
             else
             {
@@ -571,7 +655,7 @@ namespace Schedule.Test
 
             return
                string.Format(Global.ExitRecurring, Global.every + " " + this.configuration.WeekStep.ToString() +
-               " " + Global.weeks + " " + Global.on + " " + TheDay.ToString(), Global.every + " " + this.configuration.HourStep.ToString() + " " + TheHoursStr, this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
+               " " + Global.weeks + " " + Global.on + " " + TheDay.ToString(), Global.every + " " + TheHoursStr, this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
                this.configuration.HourTo.Value.ToShortTimeString(),
                this.configuration.DateFrom.Value.ToShortDateString());
         }
@@ -790,7 +874,7 @@ namespace Schedule.Test
         }
 
         [Fact]
-        public void Execute_recurring_MonthlyWeekly_once()
+        public void Execute_recurring_MonthlyWeekly_once_per_months()
         {
             // Arrange
             this.configuration.Enabled = true;
@@ -827,6 +911,67 @@ namespace Schedule.Test
             Assert.True(TheOutput[5].Description == this.GenerateMonthlyOnceOutputDescription());
         }
 
+        [Fact]
+        public void Execute_recurring_MonthlyWeekly_once_per_one_month()
+        {
+            // Arrange
+            this.configuration.Enabled = true;
+            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
+            this.configuration.MonthlyOnce = true;
+            this.configuration.MonthlyOnceDay = 8;
+            this.configuration.MonthlyOnceMonthSteps = 1;
+            this.configuration.DateStep = new DateTime(2021, 1, 1);
+            this.configuration.DateFrom = new DateTime(2021, 1, 1);
+            this.configuration.DateTo = new DateTime(2021, 2, 8);
+            this.configuration.TimeType = TypeStep.Recurring;
+            this.configuration.HourStep = 2;
+            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+
+            this.process = new Process.Schedule(this.configuration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput.Length == 2);
+            Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 1, 8, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == TheOutput[1].Description  && 
+                TheOutput[0].Description == this.GenerateMonthlyOnceOutputDescription());
+            Assert.True(TheOutput.Length == 2);
+            Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 2, 8, 8, 0, 0));
+        }
+
+
+        [Fact]
+        public void Execute_recurring_MonthlyWeekly_once_per_day_31()
+        {
+            // Arrange
+            this.configuration.Enabled = true;
+            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
+            this.configuration.MonthlyOnce = true;
+            this.configuration.MonthlyOnceDay = 31;
+            this.configuration.MonthlyOnceMonthSteps = 1;
+            this.configuration.DateStep = new DateTime(2021, 1, 1);
+            this.configuration.DateFrom = new DateTime(2021, 1, 1);
+            this.configuration.DateTo = new DateTime(2021, 4, 8);
+            this.configuration.TimeType = TypeStep.Recurring;
+            this.configuration.HourStep = 2;
+            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+
+            this.process = new Process.Schedule(this.configuration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput.Length == 2);
+            Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 1, 31, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == this.GenerateMonthlyOnceOutputDescription());
+            Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 3, 31, 8, 0, 0));
+            Assert.True(TheOutput[1].Description == this.GenerateMonthlyOnceOutputDescription());
+        }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_once_datestep_bigger_than_MonthlyOnceDay()
@@ -861,21 +1006,31 @@ namespace Schedule.Test
             string TheHoursStr = "";
             if (this.configuration.HourStep.Value > 1)
             {
-                TheHoursStr = Global.hours;
+                TheHoursStr = this.configuration.HourStep.Value.ToString() + " " + Global.hours;
             }
             else
             {
                 TheHoursStr = Global.hour;
             }
 
-            return string.Format(Global.ExitRecurring,
+            if (this.configuration.MonthlyOnceMonthSteps > 1)
+            {
+                return string.Format(Global.ExitRecurring,
                  Global.day + " " +
                  this.configuration.MonthlyOnceDay.ToString(), Global.of + " " + Global.every + " " +
                  this.configuration.MonthlyOnceMonthSteps.ToString() + " " + Global.months + " " +
-                 Global.every + " " + this.configuration.HourStep.Value.ToString() + " " + TheHoursStr,
+                 Global.every + " " + TheHoursStr,
                  this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
-                 this.configuration.HourTo.Value.ToShortTimeString(),
-                 this.configuration.DateFrom.Value.ToShortDateString());
+                 this.configuration.HourTo.Value.ToShortTimeString(), this.configuration.DateFrom.Value.ToShortDateString());
+            }
+            else
+            {
+                return string.Format(Global.ExitRecurring,
+                Global.day + " " + this.configuration.MonthlyOnceDay.ToString(), Global.of + " " + Global.every + " " +
+                Global.month + " " + Global.every + " " + TheHoursStr,
+                this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
+                this.configuration.HourTo.Value.ToShortTimeString(), this.configuration.DateFrom.Value.ToShortDateString());
+            }
         }
 
         [Fact]
@@ -1055,7 +1210,7 @@ namespace Schedule.Test
         }
 
         [Fact]
-        public void Execute_recurring_MonthlyWeekly_1_hour()
+        public void Execute_recurring_MonthlyWeekly_more_one_hour()
         {
             // Arrange
             this.configuration.Enabled = true;
@@ -1081,9 +1236,43 @@ namespace Schedule.Test
             //Assert
             Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 2, 8, 0, 0));
             Assert.True(TheOutput[0].Description ==
-                string.Format(Global.ExitRecurring, Global.the + " " + this.configuration.MonthlyMoreWeekStep.ToString().ToLower() + " " +
-                            this.configuration.MonthlyMoreOrderDayWeekStep.ToString().ToLower() + " " + Global.of + " " + Global.every + " " + this.configuration.MonthlyMoreMonthSteps.ToString() + " " + Global.months,
-                            Global.every + " " + this.configuration.HourStep.ToString() + " " + Global.hour,
+                string.Format(Global.ExitRecurring, Global.the + " " + this.configuration.MonthlyMoreWeekStep.ToString().ToLower() + " " + this.configuration.MonthlyMoreOrderDayWeekStep.ToString().ToLower() + " " + Global.of + " " + Global.every + " " + this.configuration.MonthlyMoreMonthSteps.ToString() + " " + Global.months,
+                            Global.every + " " + Global.hour,
+                            this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
+                            this.configuration.HourTo.Value.ToShortTimeString(),
+                            this.configuration.DateFrom.Value.ToShortDateString()));
+        }
+
+
+        [Fact]
+        public void Execute_recurring_MonthlyWeekly_more_one_month()
+        {
+            // Arrange
+            this.configuration.Enabled = true;
+            this.configuration.TimeType = TypeStep.Recurring;
+            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
+            this.configuration.MonthlyMore = true;
+            this.configuration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            this.configuration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Thursday;
+            this.configuration.MonthlyMoreMonthSteps = 1;
+            this.configuration.DateStep = new DateTime(2020, 1, 1);
+            this.configuration.DateFrom = new DateTime(2020, 1, 1);
+            this.configuration.DateTo = new DateTime(2020, 1, 20);
+            this.configuration.HourStep = 1;
+            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.process = new Process.Schedule(this.configuration);
+
+            int Index = this.GetIndexDay(TypeDayWeekStep.Saturday, this.configuration.DateFrom.Value);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 2, 8, 0, 0));
+            Assert.True(TheOutput[0].Description ==
+                string.Format(Global.ExitRecurring, Global.the + " " + this.configuration.MonthlyMoreWeekStep.ToString().ToLower() + " " + this.configuration.MonthlyMoreOrderDayWeekStep.ToString().ToLower() + " " + Global.of + " " + Global.every + " "  + Global.month,
+                            Global.every + " " + Global.hour,
                             this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
                             this.configuration.HourTo.Value.ToShortTimeString(),
                             this.configuration.DateFrom.Value.ToShortDateString()));
@@ -1632,14 +1821,20 @@ namespace Schedule.Test
                     DaysString = DaysString + TheWeek[Index].ToString() + " and ";
             }
 
-            return
-                string.Format(Global.ExitRecurring, Global.every + " " + this.configuration.WeekStep.ToString() +
-                " " + Global.weeks + " " + Global.on + " " + DaysString, Global.every + " " + this.configuration.HourStep.ToString() + " " + Global.hours, this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
-                this.configuration.HourTo.Value.ToShortTimeString(),
-                this.configuration.DateFrom.Value.ToShortDateString());
+            if (this.configuration.WeekStep > 1)
+            {
+                return string.Format(Global.ExitRecurring, Global.every + " " + this.configuration.WeekStep.ToString() +
+                    " " + Global.weeks + " " + Global.on + " " + DaysString, Global.every + " " + this.configuration.HourStep.ToString() + " " + Global.hours, this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
+                    this.configuration.HourTo.Value.ToShortTimeString(), this.configuration.DateFrom.Value.ToShortDateString());
+            }
+            else
+            {
+                return
+                   string.Format(Global.ExitRecurring, Global.every + " " +
+                   " " + Global.week + " " + Global.on + " " + DaysString, Global.every + " " + this.configuration.HourStep.ToString() + " " + Global.hours, this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
+                   this.configuration.HourTo.Value.ToShortTimeString(), this.configuration.DateFrom.Value.ToShortDateString());
+            }
         }
-
-
     }
 }
 
