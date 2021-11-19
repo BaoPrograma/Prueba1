@@ -12,253 +12,236 @@ namespace Schedule.Test
 {
     public class ScheduleTest
     {
-        private Configuration configuration;
         private Process.Schedule process;
 
         public ScheduleTest()
         {
-            this.configuration = new Configuration();
         }
 
         [Fact]
         public void Execute_without_configuration_enabled_sholud_return_date()
         {
             // Arrange
-            this.configuration.Enabled = false;
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.DateStep = new DateTime(2021, 8, 1).AddHours(14);
-            this.process = new Process.Schedule(this.configuration);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = false;
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateStep = new DateTime(2021, 8, 1).AddHours(14);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
-            Assert.Equal(TheOutput.Length, 1);
-            Assert.Equal(TheOutput[0].OutputDate, this.configuration.DateStep.Value);
+            Assert.True(TheOutput.Length == 1);
+            Assert.Equal(TheOutput[0].OutputDate, CurrentConfiguration.DateStep.Value);
         }
 
         [Fact]
-        public void Execute_solud_fill_date_from()
+        public void Execute_should_fill_date_from()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.DateStep = new DateTime(2021, 8, 1).AddHours(14);
-            this.process = new Process.Schedule(this.configuration);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = new DateTime(2021, 8, 1).AddHours(14);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
             var caughtException =
-                    Assert.Throws<ScheduleException>(() => this.process.Execute(this.configuration.DateStep.Value));
+                    Assert.Throws<ScheduleException>(() => this.process.Execute(CurrentConfiguration.DateStep.Value));
 
             //Assert
-            Assert.Equal(Global.ValidateDateConfiguration, caughtException.Message);
+            Assert.Equal("Need to set the Date From and Step in configuration", caughtException.Message);
         }
 
         [Fact]
         public void Execute_should_fill_configuration()
         {
             // Arrange
-            this.configuration = null;
+            Configuration CurrentConfiguration = null;
 
             var caughtException =
-                     Assert.Throws<ScheduleException>(() => 
-                     this.process = new Process.Schedule(this.configuration));
+                     Assert.Throws<ScheduleException>(() =>
+                     this.process = new Process.Schedule(CurrentConfiguration));
 
             //Assert
-            Assert.Equal(Global.ValidateConfiguration, caughtException.Message);
+            Assert.Equal("Need to fill the configuration", caughtException.Message);
         }
 
         [Fact]
         public void Execute_once_daily_should_exit_date_step()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.TimeType = TypeStep.Once;
-            this.configuration.DateStep = new DateTime(2021, 8, 1).AddHours(14);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.TimeType = TypeStep.Once;
+            CurrentConfiguration.DateStep = new DateTime(2021, 8, 1).AddHours(14);
             DateTime LaFecha = new DateTime(2021, 1, 4);
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
             Output[] TheOutput = this.process.Execute(LaFecha);
 
             //Assert
-            Assert.Equal(this.configuration.DateStep, TheOutput[0].OutputDate);
+            Assert.Equal(CurrentConfiguration.DateStep, TheOutput[0].OutputDate);
         }
 
         [Fact]
         public void Execute_once_daily_should_fill_date_from()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Once;
-            this.configuration.DateTo = new DateTime(2021, 1, 8);
-            this.process = new Process.Schedule(this.configuration);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Once;
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 8);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
             var caughtException =
                     Assert.Throws<ScheduleException>(() => this.process.Execute(new DateTime(2021, 1, 1)));
 
             //Assert
-            Assert.Equal(Global.ValidateDateConfiguration, caughtException.Message);
+            Assert.Equal("Need to set the Date From and Step in configuration", caughtException.Message);
         }
 
         [Fact]
         public void Execute_once_daily_should_fill_date_step()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Once;
-            this.configuration.DateStep = null;
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Once;
+            CurrentConfiguration.DateStep = null;
             DateTime LaFecha = new DateTime(2021, 1, 4);
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
             var caughtException =
                     Assert.Throws<ScheduleException>(() => this.process.Execute(LaFecha));
 
             //Assert
-            Assert.Equal(Global.ValidateDateConfiguration, caughtException.Message);
+            Assert.Equal("Need to set the Date From and Step in configuration", caughtException.Message);
         }
 
         [Fact]
         public void Execute_recurring_daily_should_set_frequency_when_occurs()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.DateStep = new DateTime(2021, 8, 1).AddHours(14);
-            this.configuration.HourStep = 1;
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.DateStep = new DateTime(2021, 8, 1).AddHours(14);
+            CurrentConfiguration.HourStep = 1;
             DateTime LaFecha = new DateTime(2021, 1, 4);
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
             var caughtException =
-                  Assert.Throws<ScheduleException>(() => this.process.Execute(this.configuration.DateStep.Value));
+                  Assert.Throws<ScheduleException>(() => this.process.Execute(CurrentConfiguration.DateStep.Value));
 
             //Assert
-            Assert.True(Global.ValidateRecurringFrequency == caughtException.Message);
+            Assert.Equal("Need to set when occurs recurring", caughtException.Message);
         }
 
         [Fact]
         public void Execute_recurring_daily_HourStep_should_be_higher_than_0()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TypeRecurring = TypeTimeStep.Daily;
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.DateStep = new DateTime(2021, 8, 1).AddHours(14);
-            this.configuration.HourStep = 1;
-            this.process = new Process.Schedule(this.configuration);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Daily;
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.DateStep = new DateTime(2021, 8, 1).AddHours(14);
+            CurrentConfiguration.HourStep = 1;
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
-            Assert.True(this.configuration.HourStep > 0);
+            Assert.True(CurrentConfiguration.HourStep > 0);
         }
 
         [Fact]
         public void Execute_recurring_daily_each_day()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TypeRecurring = TypeTimeStep.Daily;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.DateFrom = new DateTime(2021, 1, 1, 14, 0, 0);
-            this.configuration.DateStep = new DateTime(2021, 1, 1, 14, 0, 0);
-            this.configuration.DateTo = new DateTime(2021, 1, 4, 14, 0, 0);
-            this.configuration.TypeRecurring = TypeTimeStep.Daily;
-            this.configuration.DailyStep = 1;
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Daily;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1, 14, 0, 0);
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1, 14, 0, 0);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 4, 14, 0, 0);
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Daily;
+            CurrentConfiguration.DailyStep = 1;
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 2, 14, 0, 0));
-            Assert.True(TheOutput[0].Description ==
-                this.GenerateOutputDailyDescription(new DateTime(2021, 1, 2)));
+            Assert.True(TheOutput[0].Description == "Occurs every day. Schedule will be used on 02/01/2021 at 14:00 starting on 01/01/2021 14:00");
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 3, 14, 0, 0));
-            Assert.True(TheOutput[1].Description ==
-                this.GenerateOutputDailyDescription(new DateTime(2021, 1, 3)));
+            Assert.True(TheOutput[1].Description == "Occurs every day. Schedule will be used on 03/01/2021 at 14:00 starting on 01/01/2021 14:00");
             Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 4, 14, 0, 0));
-            Assert.True(TheOutput[2].Description ==
-                this.GenerateOutputDailyDescription(new DateTime(2021, 1, 4)));
+            Assert.True(TheOutput[2].Description == "Occurs every day. Schedule will be used on 04/01/2021 at 14:00 starting on 01/01/2021 14:00");
         }
 
         [Fact]
         public void Execute_recurring_daily_more_one_day()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TypeRecurring = TypeTimeStep.Daily;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.DateFrom = new DateTime(2021, 1, 1, 14, 0, 0);
-            this.configuration.DateStep = new DateTime(2021, 1, 1, 14, 0, 0);
-            this.configuration.DateTo = new DateTime(2021, 1, 4, 14, 0, 0);
-            this.configuration.TypeRecurring = TypeTimeStep.Daily;
-            this.configuration.DailyStep = 2;
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Daily;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1, 14, 0, 0);
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1, 14, 0, 0);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 4, 14, 0, 0);
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Daily;
+            CurrentConfiguration.DailyStep = 2;
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 2, 14, 0, 0));
-            Assert.True(TheOutput[0].Description ==
-                this.GenerateOutputDailyDescription(new DateTime(2021, 1, 2)));
+            Assert.True(TheOutput[0].Description == "Occurs every 2 days. Schedule will be used on 02/01/2021 at 14:00 starting on 01/01/2021 14:00");
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 4, 14, 0, 0));
-            Assert.True(TheOutput[1].Description ==
-                this.GenerateOutputDailyDescription(new DateTime(2021, 1, 4)));
-        }
-
-        private string GenerateOutputDailyDescription(DateTime LaFecha)
-        {
-            if (this.configuration.DailyStep > 1)
-            {
-                return
-                    (string.Format(Global.Output, Global.every + " " + this.configuration.DailyStep.ToString() + " " + Global.days,
-                    (LaFecha.ToShortDateString()) + " " + Global.at + " " + this.configuration.DateFrom.Value.ToShortTimeString())) + " " +
-                    string.Format(Global.StartingOn, this.configuration.DateFrom.Value.ToShortDateString() + " " +
-                    this.configuration.DateFrom.Value.ToShortTimeString());
-            }
-            else
-            {
-                return
-                    (string.Format(Global.Output, Global.every + " " + Global.day,
-                    (LaFecha.ToShortDateString()) + " " + Global.at + " " + this.configuration.DateFrom.Value.ToShortTimeString())) + " " +
-                    string.Format(Global.StartingOn, this.configuration.DateFrom.Value.ToShortDateString() + " " +
-                    this.configuration.DateFrom.Value.ToShortTimeString());
-            }
+            Assert.True(TheOutput[1].Description == "Occurs every 2 days. Schedule will be used on 04/01/2021 at 14:00 starting on 01/01/2021 14:00");
         }
 
         [Fact]
         public void Execute_recurring_WeeklyStep_should_be_bigger_than_0()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TypeRecurring = TypeTimeStep.Weekly;
-            this.configuration.DateStep = new DateTime(2020, 1, 4);
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.DateTo = new DateTime(2021, 1, 8);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.WeekStep = -1;
-            this.configuration.HourStep = 1;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
-            this.process = new Process.Schedule(this.configuration);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Weekly;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 4);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 8);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.WeekStep = -1;
+            CurrentConfiguration.HourStep = 1;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
             var caughtException =
-                   Assert.Throws<ScheduleException>(() => this.process.Execute(this.configuration.DateStep.Value));
+                   Assert.Throws<ScheduleException>(() => this.process.Execute(CurrentConfiguration.DateStep.Value));
 
             //Assert
-            Assert.True(Global.ValidateWeeklyStep == caughtException.Message);
+            Assert.Equal("Week step must be bigger than 0", caughtException.Message);
         }
-                
+
         [Fact]
         public void Execute_recurring_Weekly_per_one_week()
         {
@@ -266,34 +249,33 @@ namespace Schedule.Test
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Monday });
 
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.DateStep = new DateTime(2021, 1, 1);
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.DateTo = new DateTime(2021, 1, 14);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Weekly;
-            this.configuration.WeekStep = 1;
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.WeeklyMonday = true;
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 14);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Weekly;
+            CurrentConfiguration.WeekStep = 1;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.WeeklyMonday = true;
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
-            string TheOutputDescruipction = string.Format(Global.ExitRecurring, Global.every + " " + Global.week + " " + Global.on + " " + Global.Monday, Global.every + " " + this.configuration.HourStep.ToString() + " " + Global.hours, this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
-                  this.configuration.HourTo.Value.ToShortTimeString(), this.configuration.DateFrom.Value.ToShortDateString());
+            string TheOutputDescruipction = string.Format(Global.ExitRecurring, Global.every + " " + Global.week + " " + Global.on + " " + Global.Monday, Global.every + " " + CurrentConfiguration.HourStep.ToString() + " " + Global.hours, CurrentConfiguration.HourFrom.Value.ToShortTimeString() + " and " +
+                  CurrentConfiguration.HourTo.Value.ToShortTimeString(), CurrentConfiguration.DateFrom.Value.ToShortDateString());
 
             //Assert
             Assert.True(TheOutput.Length == 2);
             Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 4, 8, 0, 0));
-            Assert.True(TheOutput[0].Description == TheOutput[1].Description && 
-                TheOutput[0].Description == TheOutputDescruipction);
+            Assert.True(TheOutput[0].Description == "Occurs every week on monday every 2 hours between 8:00 am and 8:00 am starting on 01/01/2021");
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 11, 8, 0, 0));
         }
-
 
         [Fact]
         public void Execute_recurring_Weekly_per_one_hour()
@@ -302,31 +284,28 @@ namespace Schedule.Test
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Monday });
 
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.DateStep = new DateTime(2021, 1, 1);
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.DateTo = new DateTime(2021, 1, 14);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Weekly;
-            this.configuration.WeekStep = 1;
-            this.configuration.HourStep = 1;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.WeeklyMonday = true;
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 14);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Weekly;
+            CurrentConfiguration.WeekStep = 1;
+            CurrentConfiguration.HourStep = 1;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.WeeklyMonday = true;
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
-
-            string TheOutputDescruipction = string.Format(Global.ExitRecurring, Global.every + " " + Global.week + " " + Global.on + " " + Global.Monday, Global.every + " " + Global.hour, this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
-                  this.configuration.HourTo.Value.ToShortTimeString(), this.configuration.DateFrom.Value.ToShortDateString());
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput.Length == 2);
             Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 4, 8, 0, 0));
-            Assert.True(TheOutput[0].Description == TheOutput[1].Description &&
-                TheOutput[0].Description == TheOutputDescruipction);
+            Assert.True(TheOutput[0].Description == "Occurs every week on monday every hour between 8:00 am and 8:00 am starting on 01/01/2021");
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 11, 8, 0, 0));
         }
 
@@ -341,130 +320,281 @@ namespace Schedule.Test
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday });
 
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.DateStep = new DateTime(2021, 1, 1);
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.DateTo = new DateTime(2021, 1, 2);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Weekly;
-            this.configuration.WeekStep = 2;
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, HourFrom, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, HourTo, 0, 0);
-            this.configuration.WeeklyMonday = TheWeek.Contains(DayOfWeek.Monday);
-            this.configuration.WeeklyTuesday = TheWeek.Contains(DayOfWeek.Tuesday);
-            this.configuration.WeeklyWednesday = TheWeek.Contains(DayOfWeek.Wednesday);
-            this.configuration.WeeklyThursday = TheWeek.Contains(DayOfWeek.Thursday);
-            this.configuration.WeeklyFriday = TheWeek.Contains(DayOfWeek.Friday);
-            this.configuration.WeeklySaturday = TheWeek.Contains(DayOfWeek.Saturday);
-            this.configuration.WeeklySunday = TheWeek.Contains(DayOfWeek.Sunday);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 2);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Weekly;
+            CurrentConfiguration.WeekStep = 2;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, HourFrom, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, HourTo, 0, 0);
+            CurrentConfiguration.WeeklyMonday = TheWeek.Contains(DayOfWeek.Monday);
+            CurrentConfiguration.WeeklyTuesday = TheWeek.Contains(DayOfWeek.Tuesday);
+            CurrentConfiguration.WeeklyWednesday = TheWeek.Contains(DayOfWeek.Wednesday);
+            CurrentConfiguration.WeeklyThursday = TheWeek.Contains(DayOfWeek.Thursday);
+            CurrentConfiguration.WeeklyFriday = TheWeek.Contains(DayOfWeek.Friday);
+            CurrentConfiguration.WeeklySaturday = TheWeek.Contains(DayOfWeek.Saturday);
+            CurrentConfiguration.WeeklySunday = TheWeek.Contains(DayOfWeek.Sunday);
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput.Length == 6);
-            this.GenerateWeeklyRecurringOutput(TheWeek, TheOutput);
+            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 1, HourFrom, 0, 0));
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, HourFrom, 0, 0);
+            Assert.True(TheOutput[0].Description == "Occurs every 2 weeks on monday, tuesday, wednesday, thursday, friday, saturday and sunday every 2 hours between " + HourFrom.ToString("0") + ":00 am and " + HourTo.ToString("00") + ":00 am starting on 01/01/2021");
+            Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 1, HourFrom + 2, 0, 0));
+            Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 1, HourFrom + 2 + 2, 0, 0));
+            Assert.True(TheOutput[3].OutputDate.Value == new DateTime(2021, 1, 2, HourFrom, 0, 0));
+            Assert.True(TheOutput[4].OutputDate.Value == new DateTime(2021, 1, 2, HourFrom + 2, 0, 0));
+            Assert.True(TheOutput[5].OutputDate.Value == new DateTime(2021, 1, 2, HourFrom + 2 + 2, 0, 0));
         }
 
-        private void GenerateWeeklyRecurringOutput(List<DayOfWeek> TheWeek, Output[] TheOutput)
+        [Fact]
+        public void Execute_recurring_Weekly_monday_day()
         {
-            string TheOutputDescription = this.GenerateWeeklyOutput(TheWeek);
-
-            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 1,
-                this.configuration.HourFrom.Value.Hour, 0, 0));
-            Assert.True(TheOutput[0].Description == TheOutput[1].Description &&
-                TheOutput[1].Description == TheOutput[2].Description &&
-                TheOutput[2].Description == TheOutput[3].Description &&
-                TheOutput[4].Description == TheOutput[5].Description && TheOutput[0].Description == TheOutputDescription);
-            Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 1,
-                this.configuration.HourFrom.Value.Hour + this.configuration.HourStep.Value, 0, 0));
-            Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 1,
-                this.configuration.HourFrom.Value.Hour + this.configuration.HourStep.Value + 2, 0, 0));
-            Assert.True(TheOutput[3].OutputDate.Value == new DateTime(2021, 1, 2,
-                this.configuration.HourFrom.Value.Hour, 0, 0));
-            Assert.True(TheOutput[4].OutputDate.Value == new DateTime(2021, 1, 2,
-                this.configuration.HourFrom.Value.Hour + this.configuration.HourStep.Value, 0, 0));
-            Assert.True(TheOutput[5].OutputDate.Value == new DateTime(2021, 1, 2,
-                this.configuration.HourFrom.Value.Hour + this.configuration.HourStep.Value + 2, 0, 0));
-        }
-
-        [Theory]
-        [InlineData(DayOfWeek.Monday)]
-        [InlineData(DayOfWeek.Tuesday)]
-        [InlineData(DayOfWeek.Wednesday)]
-        [InlineData(DayOfWeek.Thursday)]
-        [InlineData(DayOfWeek.Friday)]
-        [InlineData(DayOfWeek.Saturday)]
-        [InlineData(DayOfWeek.Sunday)]
-        public void Execute_recurring_Weekly_per_each_day(DayOfWeek TheDay)
-        {
-            List<DayOfWeek> TheWeek = new List<DayOfWeek>();
-            TheWeek.AddRange(new DayOfWeek[] { TheDay });
-
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.DateStep = new DateTime(2021, 1, 1);
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.DateTo = new DateTime(2021, 1, 14);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Weekly;
-            this.configuration.WeekStep = 2;
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
-            this.configuration.WeeklyMonday = TheWeek.Contains(DayOfWeek.Monday);
-            this.configuration.WeeklyTuesday = TheWeek.Contains(DayOfWeek.Tuesday);
-            this.configuration.WeeklyWednesday = TheWeek.Contains(DayOfWeek.Wednesday);
-            this.configuration.WeeklyThursday = TheWeek.Contains(DayOfWeek.Thursday);
-            this.configuration.WeeklyFriday = TheWeek.Contains(DayOfWeek.Friday);
-            this.configuration.WeeklySaturday = TheWeek.Contains(DayOfWeek.Saturday);
-            this.configuration.WeeklySunday = TheWeek.Contains(DayOfWeek.Sunday);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 14);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Weekly;
+            CurrentConfiguration.WeekStep = 2;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            CurrentConfiguration.WeeklyMonday = true;
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput.Length == 3);
-            this.CheckOutputWeekly(TheOutput, TheDay);
+            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 11, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs every 2 weeks on monday every 2 hours between 8:00 am and 12:00 am starting on 01/01/2021");
+            Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 11, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 11, 12, 0, 0));
         }
 
-        [Fact]       
+        [Fact]
+        public void Execute_recurring_Weekly_tuesday_day()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 14);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Weekly;
+            CurrentConfiguration.WeekStep = 2;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            CurrentConfiguration.WeeklyTuesday = true;
+
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput.Length == 3);
+            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 12, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs every 2 weeks on tuesday every 2 hours between 8:00 am and 12:00 am starting on 01/01/2021");
+            Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 12, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 12, 12, 0, 0));
+        }
+
+        [Fact]
+        public void Execute_recurring_Weekly_wednesday_day()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 14);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Weekly;
+            CurrentConfiguration.WeekStep = 2;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            CurrentConfiguration.WeeklyWednesday = true;
+
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput.Length == 3);
+            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 13, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs every 2 weeks on wednesday every 2 hours between 8:00 am and 12:00 am starting on 01/01/2021");
+            Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 13, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 13, 12, 0, 0));
+        }
+
+        [Fact]
+        public void Execute_recurring_Weekly_thursday_day()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 14);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Weekly;
+            CurrentConfiguration.WeekStep = 2;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            CurrentConfiguration.WeeklyThursday = true;
+
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput.Length == 3);
+            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 14, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs every 2 weeks on thursday every 2 hours between 8:00 am and 12:00 am starting on 01/01/2021");
+            Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 14, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 14, 12, 0, 0));
+        }
+
+        [Fact]
+        public void Execute_recurring_Weekly_friday_day()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 14);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Weekly;
+            CurrentConfiguration.WeekStep = 2;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            CurrentConfiguration.WeeklyFriday = true;
+
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput.Length == 3);
+            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 1, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs every 2 weeks on friday every 2 hours between 8:00 am and 12:00 am starting on 01/01/2021");
+            Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 1, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 1, 12, 0, 0));
+        }
+
+        [Fact]
+        public void Execute_recurring_Weekly_saturday_day()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 14);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Weekly;
+            CurrentConfiguration.WeekStep = 2;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            CurrentConfiguration.WeeklySaturday = true;
+
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput.Length == 3);
+            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 2, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs every 2 weeks on saturday every 2 hours between 8:00 am and 12:00 am starting on 01/01/2021");
+            Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 2, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 2, 12, 0, 0));
+        }
+
+        [Fact]
+        public void Execute_recurring_Weekly_sunday_day()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 14);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Weekly;
+            CurrentConfiguration.WeekStep = 2;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            CurrentConfiguration.WeeklySunday = true;
+
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput.Length == 3);
+            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 3, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs every 2 weeks on sunday every 2 hours between 8:00 am and 12:00 am starting on 01/01/2021");
+            Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 3, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 3, 12, 0, 0));
+        }
+
+        [Fact]
         public void Execute_recurring_Weekly_saturady_begin()
         {
             List<DayOfWeek> TheWeek = new List<DayOfWeek>();
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Saturday });
 
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.DateStep = new DateTime(2021, 1, 2);
-            this.configuration.DateFrom = new DateTime(2021, 1, 2);
-            this.configuration.DateTo = new DateTime(2021, 1, 30);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Weekly;
-            this.configuration.WeekStep = 2;
-            this.configuration.HourStep = 1;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.WeeklySaturday = TheWeek.Contains(DayOfWeek.Saturday);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 2);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 2);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 30);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Weekly;
+            CurrentConfiguration.WeekStep = 2;
+            CurrentConfiguration.HourStep = 1;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.WeeklySaturday = TheWeek.Contains(DayOfWeek.Saturday);
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
-
-            string TheOutputDescription = this.GenerateWeeklyOutputPerDay(DayOfWeek.Saturday);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput.Length == 3);
             Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 2, 8, 0, 0));
-            Assert.True(TheOutput[0].Description == TheOutput[1].Description &&
-                TheOutput[1].Description == TheOutput[2].Description && TheOutput[0].Description == TheOutputDescription);
-            Assert.True(TheOutput[0].Description == TheOutputDescription);
+            Assert.True(TheOutput[0].Description == "Occurs every 2 weeks on saturday every hour between 8:00 am and 8:00 am starting on 02/01/2021");
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 16, 8, 0, 0));
             Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 30, 8, 0, 0));
         }
@@ -476,30 +606,28 @@ namespace Schedule.Test
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Sunday });
 
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.DateStep = new DateTime(2021, 1, 3);
-            this.configuration.DateFrom = new DateTime(2021, 1, 3);
-            this.configuration.DateTo = new DateTime(2021, 1, 31);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Weekly;
-            this.configuration.WeekStep = 2;
-            this.configuration.HourStep = 1;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.WeeklySunday = TheWeek.Contains(DayOfWeek.Sunday);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 3);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 3);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 31);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Weekly;
+            CurrentConfiguration.WeekStep = 2;
+            CurrentConfiguration.HourStep = 1;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.WeeklySunday = TheWeek.Contains(DayOfWeek.Sunday);
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
-
-            string TheOutputDescription = this.GenerateWeeklyOutputPerDay(DayOfWeek.Sunday);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput.Length == 3);
             Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 3, 8, 0, 0));
-            Assert.True(TheOutput[0].Description == TheOutput[1].Description &&
-                TheOutput[1].Description == TheOutput[2].Description && TheOutput[0].Description == TheOutputDescription);
+            Assert.True(TheOutput[0].Description == "Occurs every 2 weeks on sunday every hour between 8:00 am and 8:00 am starting on 03/01/2021");
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 17, 8, 0, 0));
             Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 31, 8, 0, 0));
         }
@@ -511,29 +639,28 @@ namespace Schedule.Test
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Thursday });
 
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.DateStep = new DateTime(2021, 1, 7);
-            this.configuration.DateFrom = new DateTime(2021, 1, 7);
-            this.configuration.DateTo = new DateTime(2021, 1, 31);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Weekly;
-            this.configuration.WeekStep = 2;
-            this.configuration.HourStep = 1;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.WeeklyThursday = TheWeek.Contains(DayOfWeek.Thursday);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 7);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 7);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 31);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Weekly;
+            CurrentConfiguration.WeekStep = 2;
+            CurrentConfiguration.HourStep = 1;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.WeeklyThursday = TheWeek.Contains(DayOfWeek.Thursday);
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
-
-            string TheOutputDescription = this.GenerateWeeklyOutputPerDay(DayOfWeek.Thursday);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput.Length == 2);
             Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 7, 8, 0, 0));
-            Assert.True(TheOutput[0].Description == TheOutput[1].Description && TheOutput[0].Description == TheOutputDescription);
+            Assert.True(TheOutput[0].Description == "Occurs every 2 weeks on thursday every hour between 8:00 am and 8:00 am starting on 07/01/2021");
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 21, 8, 0, 0));
         }
 
@@ -544,29 +671,28 @@ namespace Schedule.Test
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Wednesday });
 
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.DateStep = new DateTime(2021, 1, 6);
-            this.configuration.DateFrom = new DateTime(2021, 1, 6);
-            this.configuration.DateTo = new DateTime(2021, 1, 31);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Weekly;
-            this.configuration.WeekStep = 2;
-            this.configuration.HourStep = 1;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.WeeklyWednesday = TheWeek.Contains(DayOfWeek.Wednesday);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 6);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 6);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 31);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Weekly;
+            CurrentConfiguration.WeekStep = 2;
+            CurrentConfiguration.HourStep = 1;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.WeeklyWednesday = TheWeek.Contains(DayOfWeek.Wednesday);
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
-
-            string TheOutputDescription = this.GenerateWeeklyOutputPerDay(DayOfWeek.Wednesday);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput.Length == 2);
             Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 6, 8, 0, 0));
-            Assert.True(TheOutput[0].Description == TheOutput[1].Description && TheOutput[0].Description == TheOutputDescription);
+            Assert.True(TheOutput[0].Description == "Occurs every 2 weeks on wednesday every hour between 8:00 am and 8:00 am starting on 06/01/2021");
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 20, 8, 0, 0));
         }
 
@@ -577,730 +703,915 @@ namespace Schedule.Test
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Tuesday });
 
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.DateStep = new DateTime(2021, 1, 5);
-            this.configuration.DateFrom = new DateTime(2021, 1, 5);
-            this.configuration.DateTo = new DateTime(2021, 1, 31);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Weekly;
-            this.configuration.WeekStep = 2;
-            this.configuration.HourStep = 1;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.WeeklyTuesday = TheWeek.Contains(DayOfWeek.Tuesday);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 5);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 5);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 31);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Weekly;
+            CurrentConfiguration.WeekStep = 2;
+            CurrentConfiguration.HourStep = 1;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.WeeklyTuesday = TheWeek.Contains(DayOfWeek.Tuesday);
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
-
-            string TheOutputDescription = this.GenerateWeeklyOutputPerDay(DayOfWeek.Tuesday);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput.Length == 2);
             Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 5, 8, 0, 0));
-            Assert.True(TheOutput[0].Description == TheOutput[1].Description && TheOutput[0].Description == TheOutputDescription);
+            Assert.True(TheOutput[0].Description == "Occurs every 2 weeks on tuesday every hour between 8:00 am and 8:00 am starting on 05/01/2021");
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 19, 8, 0, 0));
-        }
-
-        private void CheckOutputWeekly(Output[] TheOutput, DayOfWeek TheDay)
-        {
-            int Index = 1;
-
-            switch (TheDay)
-            {
-                case DayOfWeek.Monday:
-                    Index = Index + 10;
-                    break;
-                case DayOfWeek.Tuesday:
-                    Index = Index + 11;
-                    break;
-                case DayOfWeek.Wednesday:
-                    Index = Index + 12;
-                    break;
-                case DayOfWeek.Thursday:
-                    Index = Index + 13;
-                    break;
-                case DayOfWeek.Friday:
-                    Index = 1;
-                    break;
-                case DayOfWeek.Saturday:
-                    Index = 2;
-                    break;
-                case DayOfWeek.Sunday:
-                    Index = 3;
-                    break;
-
-            }
-
-            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, Index, 8, 0, 0));
-            Assert.True(TheOutput[0].Description == this.GenerateWeeklyOutputPerDay(TheDay));
-            Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, Index, 10, 0, 0));
-            Assert.True(TheOutput[1].Description == this.GenerateWeeklyOutputPerDay(TheDay));
-            Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, Index, 12, 0, 0));
-            Assert.True(TheOutput[2].Description == this.GenerateWeeklyOutputPerDay(TheDay));
-        }
-
-        private string GenerateWeeklyOutputPerDay(DayOfWeek TheDay)
-        {
-            string TheHoursStr = "";
-            if (this.configuration.HourStep > 1)
-            {
-                TheHoursStr = this.configuration.HourStep.ToString() + " " + Global.hours;
-            }
-            else
-            {
-                TheHoursStr = Global.hour;
-            }
-
-            return
-               string.Format(Global.ExitRecurring, Global.every + " " + this.configuration.WeekStep.ToString() +
-               " " + Global.weeks + " " + Global.on + " " + TheDay.ToString(), Global.every + " " + TheHoursStr, this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
-               this.configuration.HourTo.Value.ToShortTimeString(),
-               this.configuration.DateFrom.Value.ToShortDateString());
         }
 
         [Fact]
         public void Recurring_MonthlyMore_WeekStep_monthlyWeekVar_should_not_be_null()
         {
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.MonthlyMoreWeekStep = TypeWeekStep.First;
-            this.configuration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Day;
-            this.configuration.MonthlyMoreMonthSteps = 3;
-            this.configuration.DateStep = new DateTime(2020, 1, 1);
-            this.configuration.DateFrom = new DateTime(2020, 1, 1);
-            this.configuration.DateTo = new DateTime(2020, 4, 20);
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
-            this.process = new Process.Schedule(this.configuration);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Day;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 4, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            this.process.Execute(this.configuration.DateStep.Value);
+            this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
-            Assert.Equal(true, (this.process.MonthlyWeekVar != null));
+            Assert.True(this.process.MonthlyWeekVar != null);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_once_should_set_monthly_configuration()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyOnceDay = 8;
-            this.configuration.MonthlyOnceMonthSteps = 2;
-            this.configuration.DateStep = new DateTime(2021, 1, 1);
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.DateTo = new DateTime(2021, 3, 1);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyOnceDay = 8;
+            CurrentConfiguration.MonthlyOnceMonthSteps = 2;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 3, 1);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
             var caughtException =
-                    Assert.Throws<ScheduleException>(() => this.process.Execute(this.configuration.DateStep.Value));
+                    Assert.Throws<ScheduleException>(() => this.process.Execute(CurrentConfiguration.DateStep.Value));
 
             //Assert
-            Assert.Equal(Global.ValidateMonthlyConfiguration, caughtException.Message);
+            Assert.Equal("Need to set one of the checks in Monthly Configuration (day, the ..)", caughtException.Message);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_once_should_set_month_step_bigger_than_0()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyOnce = true;
-            this.configuration.MonthlyOnceDay = 8;
-            this.configuration.MonthlyOnceMonthSteps = 0;
-            this.configuration.DateStep = new DateTime(2021, 1, 1);
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.DateTo = new DateTime(2021, 3, 1);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyOnce = true;
+            CurrentConfiguration.MonthlyOnceDay = 8;
+            CurrentConfiguration.MonthlyOnceMonthSteps = 0;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 3, 1);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
             var caughtException =
-                    Assert.Throws<ScheduleException>(() => this.process.Execute(this.configuration.DateStep.Value));
+                    Assert.Throws<ScheduleException>(() => this.process.Execute(CurrentConfiguration.DateStep.Value));
 
             //Assert
-            Assert.Equal(Global.ValidateMonthlyMonths, caughtException.Message);
+            Assert.Equal("Need to set month(s) bigger than 0", caughtException.Message);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_once_should_set_day_bigger_than_0_in_day_configuration()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyOnce = true;
-            this.configuration.MonthlyOnceDay = -1;
-            this.configuration.MonthlyOnceMonthSteps = 1;
-            this.configuration.DateStep = new DateTime(2021, 1, 1);
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.DateTo = new DateTime(2021, 3, 1);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyOnce = true;
+            CurrentConfiguration.MonthlyOnceDay = -1;
+            CurrentConfiguration.MonthlyOnceMonthSteps = 1;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 3, 1);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
             var caughtException =
-                    Assert.Throws<ScheduleException>(() => this.process.Execute(this.configuration.DateStep.Value));
+                    Assert.Throws<ScheduleException>(() => this.process.Execute(CurrentConfiguration.DateStep.Value));
 
             //Assert
-            Assert.Equal(Global.ValidateMonthlyOnceDayFrequency, caughtException.Message);
+            Assert.Equal("Day must be bigger than 0", caughtException.Message);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_once_should_set_month_bigger_than_0_in_day_configuration()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyOnce = true;
-            this.configuration.MonthlyOnceDay = 1;
-            this.configuration.MonthlyOnceMonthSteps = -1;
-            this.configuration.DateStep = new DateTime(2021, 1, 1);
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.DateTo = new DateTime(2021, 3, 1);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyOnce = true;
+            CurrentConfiguration.MonthlyOnceDay = 1;
+            CurrentConfiguration.MonthlyOnceMonthSteps = -1;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 3, 1);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
             var caughtException =
-                    Assert.Throws<ScheduleException>(() => this.process.Execute(this.configuration.DateStep.Value));
+                    Assert.Throws<ScheduleException>(() => this.process.Execute(CurrentConfiguration.DateStep.Value));
 
             //Assert
-            Assert.Equal(Global.ValidateMonthlyMonths, caughtException.Message);
+            Assert.Equal("Need to set month(s) bigger than 0", caughtException.Message);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_once_should_set_hour_step_daily_frequency_bigger_than_0()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyOnce = true;
-            this.configuration.MonthlyOnceDay = 8;
-            this.configuration.MonthlyOnceMonthSteps = 1;
-            this.configuration.DateStep = new DateTime(2021, 1, 1);
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.DateTo = new DateTime(2021, 3, 1);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.HourStep = 0;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyOnce = true;
+            CurrentConfiguration.MonthlyOnceDay = 8;
+            CurrentConfiguration.MonthlyOnceMonthSteps = 1;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 3, 1);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.HourStep = 0;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
             var caughtException =
-                    Assert.Throws<ScheduleException>(() => this.process.Execute(this.configuration.DateStep.Value));
+                    Assert.Throws<ScheduleException>(() => this.process.Execute(CurrentConfiguration.DateStep.Value));
 
             //Assert
-            Assert.Equal(Global.ValidateHourStepOfDailyFrequency, caughtException.Message);
+            Assert.Equal("Need to set hour step in daily frequency bigger than 0", caughtException.Message);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_once_hour_from_should_be_smaller_than_hour_to()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyOnce = true;
-            this.configuration.MonthlyOnceDay = 8;
-            this.configuration.MonthlyOnceMonthSteps = 1;
-            this.configuration.DateStep = new DateTime(2021, 1, 1);
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.DateTo = new DateTime(2021, 3, 1);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeDailyFrequency = DailyFrequency.Every;
-            this.configuration.HourStep = 1;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 10, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyOnce = true;
+            CurrentConfiguration.MonthlyOnceDay = 8;
+            CurrentConfiguration.MonthlyOnceMonthSteps = 1;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 3, 1);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeDailyFrequency = DailyFrequency.Every;
+            CurrentConfiguration.HourStep = 1;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 10, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
             var caughtException =
-                    Assert.Throws<ScheduleException>(() => this.process.Execute(this.configuration.DateStep.Value));
+                    Assert.Throws<ScheduleException>(() => this.process.Execute(CurrentConfiguration.DateStep.Value));
 
             //Assert
-            Assert.Equal(Global.ValidateHourFromBigggerHourTo, caughtException.Message);
+            Assert.Equal("Hour From not should be bigger than Hour To", caughtException.Message);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_once_should_set_month_frequency()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyOnce = true;
-            this.configuration.MonthlyOnceDay = 8;
-            this.configuration.DateStep = new DateTime(2021, 1, 1);
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.DateTo = new DateTime(2021, 3, 1);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyOnce = true;
+            CurrentConfiguration.MonthlyOnceDay = 8;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 3, 1);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
             var caughtException =
-                  Assert.Throws<ScheduleException>(() => this.process.Execute(this.configuration.DateStep.Value));
+                  Assert.Throws<ScheduleException>(() => this.process.Execute(CurrentConfiguration.DateStep.Value));
 
             //Assert
-            Assert.True(Global.ValidateMonthlyConfiguration == caughtException.Message);
+            Assert.True("Need to set one of the checks in Monthly Configuration (day, the ..)" == caughtException.Message);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_once_per_months()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyOnce = true;
-            this.configuration.MonthlyOnceDay = 8;
-            this.configuration.MonthlyOnceMonthSteps = 2;
-            this.configuration.DateStep = new DateTime(2021, 1, 1);
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.DateTo = new DateTime(2021, 3, 8);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyOnce = true;
+            CurrentConfiguration.MonthlyOnceDay = 8;
+            CurrentConfiguration.MonthlyOnceMonthSteps = 2;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 3, 8);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput.Length == 6);
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 1, 8, 8, 0, 0));
-            Assert.True(TheOutput[0].Description == this.GenerateMonthlyOnceOutputDescription());
+            Assert.True(TheOutput[0].Description == "Occurs day 8 of every 2 months every 2 hours between 8:00 am and 12:00 am starting on 01/01/2021");
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 1, 8, 10, 0, 0));
-            Assert.True(TheOutput[1].Description == this.GenerateMonthlyOnceOutputDescription());
             Assert.True(TheOutput[2].OutputDate == new DateTime(2021, 1, 8, 12, 0, 0));
-            Assert.True(TheOutput[2].Description == this.GenerateMonthlyOnceOutputDescription());
             Assert.True(TheOutput[3].OutputDate == new DateTime(2021, 3, 8, 8, 0, 0));
-            Assert.True(TheOutput[3].Description == this.GenerateMonthlyOnceOutputDescription());
             Assert.True(TheOutput[4].OutputDate == new DateTime(2021, 3, 8, 10, 0, 0));
-            Assert.True(TheOutput[4].Description == this.GenerateMonthlyOnceOutputDescription());
             Assert.True(TheOutput[5].OutputDate == new DateTime(2021, 3, 8, 12, 0, 0));
-            Assert.True(TheOutput[5].Description == this.GenerateMonthlyOnceOutputDescription());
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_once_per_one_month()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyOnce = true;
-            this.configuration.MonthlyOnceDay = 8;
-            this.configuration.MonthlyOnceMonthSteps = 1;
-            this.configuration.DateStep = new DateTime(2021, 1, 1);
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.DateTo = new DateTime(2021, 2, 8);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyOnce = true;
+            CurrentConfiguration.MonthlyOnceDay = 8;
+            CurrentConfiguration.MonthlyOnceMonthSteps = 1;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 2, 8);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput.Length == 2);
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 1, 8, 8, 0, 0));
-            Assert.True(TheOutput[0].Description == TheOutput[1].Description  && 
-                TheOutput[0].Description == this.GenerateMonthlyOnceOutputDescription());
-            Assert.True(TheOutput.Length == 2);
+            Assert.True(TheOutput[0].Description == "Occurs day 8 of every month every 2 hours between 8:00 am and 8:00 am starting on 01/01/2021");
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 2, 8, 8, 0, 0));
         }
-
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_once_per_day_31()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyOnce = true;
-            this.configuration.MonthlyOnceDay = 31;
-            this.configuration.MonthlyOnceMonthSteps = 1;
-            this.configuration.DateStep = new DateTime(2021, 1, 1);
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.DateTo = new DateTime(2021, 4, 8);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyOnce = true;
+            CurrentConfiguration.MonthlyOnceDay = 31;
+            CurrentConfiguration.MonthlyOnceMonthSteps = 1;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 4, 8);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
 
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput.Length == 2);
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 1, 31, 8, 0, 0));
-            Assert.True(TheOutput[0].Description == this.GenerateMonthlyOnceOutputDescription());
+            Assert.True(TheOutput[0].Description == "Occurs day 31 of every month every 2 hours between 8:00 am and 8:00 am starting on 01/01/2021");
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 3, 31, 8, 0, 0));
-            Assert.True(TheOutput[1].Description == this.GenerateMonthlyOnceOutputDescription());
-        }
-
-        [Fact]
-        public void Execute_recurring_MonthlyWeekly_once_datestep_bigger_than_MonthlyOnceDay()
-        {
-            // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyOnce = true;
-            this.configuration.MonthlyOnceDay = 8;
-            this.configuration.MonthlyOnceMonthSteps = 2;
-            this.configuration.DateStep = new DateTime(2021, 1, 10);
-            this.configuration.DateFrom = new DateTime(2021, 1, 10);
-            this.configuration.DateTo = new DateTime(2021, 3, 10);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.HourStep = 1;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-
-            this.process = new Process.Schedule(this.configuration);
-
-            //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
-
-            //Assert
-            Assert.True(TheOutput.Length == 1);
-            Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 3, 8, 8, 0, 0));
-            Assert.True(TheOutput[0].Description == this.GenerateMonthlyOnceOutputDescription());
-        }
-
-        private string GenerateMonthlyOnceOutputDescription()
-        {
-            string TheHoursStr = "";
-            if (this.configuration.HourStep.Value > 1)
-            {
-                TheHoursStr = this.configuration.HourStep.Value.ToString() + " " + Global.hours;
-            }
-            else
-            {
-                TheHoursStr = Global.hour;
-            }
-
-            if (this.configuration.MonthlyOnceMonthSteps > 1)
-            {
-                return string.Format(Global.ExitRecurring,
-                 Global.day + " " +
-                 this.configuration.MonthlyOnceDay.ToString(), Global.of + " " + Global.every + " " +
-                 this.configuration.MonthlyOnceMonthSteps.ToString() + " " + Global.months + " " +
-                 Global.every + " " + TheHoursStr,
-                 this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
-                 this.configuration.HourTo.Value.ToShortTimeString(), this.configuration.DateFrom.Value.ToShortDateString());
-            }
-            else
-            {
-                return string.Format(Global.ExitRecurring,
-                Global.day + " " + this.configuration.MonthlyOnceDay.ToString(), Global.of + " " + Global.every + " " +
-                Global.month + " " + Global.every + " " + TheHoursStr,
-                this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
-                this.configuration.HourTo.Value.ToShortTimeString(), this.configuration.DateFrom.Value.ToShortDateString());
-            }
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_without_hour_from_and_hour_to()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.MonthlyMoreWeekStep = TypeWeekStep.First;
-            this.configuration.MonthlyMoreMonthSteps = 1;
-            this.configuration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Thursday;
-            this.configuration.DateStep = new DateTime(2020, 1, 4);
-            this.configuration.DateFrom = new DateTime(2020, 1, 1);
-            this.configuration.DateTo = new DateTime(2020, 1, 27);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = null;
-            this.configuration.HourTo = null;
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 1;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Thursday;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 4);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 1, 27);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = null;
             DateTime LaFecha = new DateTime(2020, 1, 1);
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
             var caughtException =
                     Assert.Throws<ScheduleException>(() => this.process.Execute(LaFecha));
 
             //Assert
-            Assert.Equal(Global.ValidateMonthlyMoreHourFromTo, caughtException.Message);
+            Assert.Equal("Need to set the hour from and hour to", caughtException.Message);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_should_set_MonthlyConfiguration()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.DateStep = new DateTime(2020, 1, 4);
-            this.configuration.DateFrom = new DateTime(2020, 1, 1);
-            this.configuration.DateTo = new DateTime(2020, 1, 27);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.HourStep = 2;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 4);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 1, 27);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
             DateTime LaFecha = new DateTime(2020, 1, 1);
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
             var caughtException =
                     Assert.Throws<ScheduleException>(() => this.process.Execute(LaFecha));
 
             //Assert
-            Assert.Equal(Global.ValidateMonthlyConfiguration, caughtException.Message);
+            Assert.Equal("Need to set one of the checks in Monthly Configuration (day, the ..)", caughtException.Message);
         }
 
         [Fact]
-        public void Execute_recurring_MonthlyWeekly_more_not_avaliable_huor_step()
+        public void Execute_recurring_MonthlyWeekly_more_not_avaliable_hour_step()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.DateStep = new DateTime(2020, 1, 4);
-            this.configuration.DateFrom = new DateTime(2020, 1, 1);
-            this.configuration.DateTo = new DateTime(2020, 1, 27);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.HourStep = -1;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 4);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 1, 27);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.HourStep = -1;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
             DateTime LaFecha = new DateTime(2020, 1, 1);
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
             var caughtException =
                     Assert.Throws<ScheduleException>(() => this.process.Execute(LaFecha));
 
             //Assert
-            Assert.Equal(Global.ValidateHourStep, caughtException.Message);
+            Assert.Equal("Hour step must be bigger than 0", caughtException.Message);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_should_fill_date_step()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.DateStep = null;
-            this.configuration.DateFrom = new DateTime(2020, 1, 3);
-            this.configuration.DateTo = new DateTime(2020, 1, 27);
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.HourStep = -1;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.DateStep = null;
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 3);
+            CurrentConfiguration.DateTo = new DateTime(2020, 1, 27);
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.HourStep = -1;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
             DateTime LaFecha = new DateTime(2020, 1, 1);
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
             var caughtException =
                     Assert.Throws<ScheduleException>(() => this.process.Execute(LaFecha));
 
             //Assert
-            Assert.Equal(Global.ValidateDateConfiguration, caughtException.Message);
+            Assert.Equal("Need to set the Date From and Step in configuration", caughtException.Message);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_without_days()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.DateStep = new DateTime(2020, 1, 2);
-            this.configuration.DateFrom = new DateTime(2020, 1, 1);
-            this.configuration.DateTo = new DateTime(2020, 1, 27);
-            this.configuration.MonthlyMoreMonthSteps = 1;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.HourStep = 1;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 2);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 1, 27);
+            CurrentConfiguration.MonthlyMoreMonthSteps = 1;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.HourStep = 1;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
             DateTime LaFecha = new DateTime(2020, 1, 1);
-            this.process = new Process.Schedule(this.configuration);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
             var caughtException =
                     Assert.Throws<ScheduleException>(() => this.process.Execute(LaFecha));
 
             //Assert
-            Assert.Equal(Global.ValidateMonthlyMoreWeekStep, caughtException.Message);
+            Assert.Equal("Need to set the day frequency", caughtException.Message);
         }
 
-        [Theory]
-        [InlineData(TypeDayWeekStep.Thursday)]
-        [InlineData(TypeDayWeekStep.Tuesday)]
-        [InlineData(TypeDayWeekStep.Wednesday)]
-        [InlineData(TypeDayWeekStep.Friday)]
-        [InlineData(TypeDayWeekStep.Saturday)]
-        [InlineData(TypeDayWeekStep.Sunday)]
-        [InlineData(TypeDayWeekStep.Monday)]
-        [InlineData(TypeDayWeekStep.Day)]
-        [InlineData(TypeDayWeekStep.WeekDay)]
-        [InlineData(TypeDayWeekStep.WeekendDay)]
-        public void Execute_recurring_MonthlyWeekly_more_per_days(TypeDayWeekStep TheDay)
+        [Fact]
+        public void Execute_recurring_MonthlyWeekly_more_per_monday()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.MonthlyMoreWeekStep = TypeWeekStep.First;
-            this.configuration.MonthlyMoreOrderDayWeekStep = TheDay;
-            this.configuration.MonthlyMoreMonthSteps = 3;
-            this.configuration.DateStep = new DateTime(2020, 1, 1);
-            this.configuration.DateFrom = new DateTime(2020, 1, 1);
-            this.configuration.DateTo = new DateTime(2020, 4, 20);
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
-            this.process = new Process.Schedule(this.configuration);
-
-            int Index = this.GetIndexDay(TheDay, this.configuration.DateFrom.Value);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Monday;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 4, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
-            if (TheDay == TypeDayWeekStep.WeekDay)
-            {
-                this.CheckRecurringWeekdayOutput(TheOutput);
-            }
-            else if (TheDay == TypeDayWeekStep.WeekendDay)
-            {
-                this.CheckRecurringWeekendayOutput(TheOutput);
-            }
-            else
-            {
-                this.CheckRecurringOutput(Index, TheOutput);
-            }
+            Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 6, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs the first monday of every 3 months every 2 hours between 8:00 am and 12:00 am starting on 01/01/2020");
+            Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 6, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 6, 12, 0, 0));
+            Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 4, 6, 8, 0, 0));
+            Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 4, 6, 10, 0, 0));
+            Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 4, 6, 12, 0, 0));
+        }
+
+        [Fact]
+        public void Execute_recurring_MonthlyWeekly_more_per_tuesday()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Tuesday;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 4, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 7, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs the first tuesday of every 3 months every 2 hours between 8:00 am and 12:00 am starting on 01/01/2020");
+            Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 7, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 7, 12, 0, 0));
+            Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 4, 7, 8, 0, 0));
+            Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 4, 7, 10, 0, 0));
+            Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 4, 7, 12, 0, 0));
+        }
+
+        [Fact]
+        public void Execute_recurring_MonthlyWeekly_more_per_wednesday()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Wednesday;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 4, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 1, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs the first wednesday of every 3 months every 2 hours between 8:00 am and 12:00 am starting on 01/01/2020");
+            Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 1, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 1, 12, 0, 0));
+            Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 4, 1, 8, 0, 0));
+            Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 4, 1, 10, 0, 0));
+            Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 4, 1, 12, 0, 0));
+        }
+
+        [Fact]
+        public void Execute_recurring_MonthlyWeekly_more_per_thursday()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Thursday;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 4, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 2, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs the first thursday of every 3 months every 2 hours between 8:00 am and 12:00 am starting on 01/01/2020");
+            Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 2, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 2, 12, 0, 0));
+            Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 4, 2, 8, 0, 0));
+            Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 4, 2, 10, 0, 0));
+            Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 4, 2, 12, 0, 0));
+        }
+
+        [Fact]
+        public void Execute_recurring_MonthlyWeekly_more_per_Friday()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Friday;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 4, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 3, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs the first friday of every 3 months every 2 hours between 8:00 am and 12:00 am starting on 01/01/2020");
+            Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 3, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 3, 12, 0, 0));
+            Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 4, 3, 8, 0, 0));
+            Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 4, 3, 10, 0, 0));
+            Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 4, 3, 12, 0, 0));
+        }
+
+        [Fact]
+        public void Execute_recurring_MonthlyWeekly_more_per_saturday()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Saturday;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 4, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 4, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs the first saturday of every 3 months every 2 hours between 8:00 am and 12:00 am starting on 01/01/2020");
+            Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 4, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 4, 12, 0, 0));
+            Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 4, 4, 8, 0, 0));
+            Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 4, 4, 10, 0, 0));
+            Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 4, 4, 12, 0, 0));
+        }
+
+        [Fact]
+        public void Execute_recurring_MonthlyWeekly_more_per_sunday()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Sunday;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 4, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 5, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs the first sunday of every 3 months every 2 hours between 8:00 am and 12:00 am starting on 01/01/2020");
+            Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 5, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 5, 12, 0, 0));
+            Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 4, 5, 8, 0, 0));
+            Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 4, 5, 10, 0, 0));
+            Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 4, 5, 12, 0, 0));
+        }
+
+        [Fact]
+        public void Execute_recurring_MonthlyWeekly_more_per_weekenday()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.WeekendDay;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 4, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 4, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs the first weekend day of every 3 months every 2 hours between 8:00 am and 12:00 am starting on 01/01/2020");
+            Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 4, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 4, 12, 0, 0));
+            Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 1, 5, 8, 0, 0));
+            Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 1, 5, 10, 0, 0));
+            Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 1, 5, 12, 0, 0));
+            Assert.True(TheOutput[6].OutputDate == new DateTime(2020, 4, 4, 8, 0, 0));
+            Assert.True(TheOutput[7].OutputDate == new DateTime(2020, 4, 4, 10, 0, 0));
+            Assert.True(TheOutput[8].OutputDate == new DateTime(2020, 4, 4, 12, 0, 0));
+            Assert.True(TheOutput[9].OutputDate == new DateTime(2020, 4, 5, 8, 0, 0));
+            Assert.True(TheOutput[10].OutputDate == new DateTime(2020, 4, 5, 10, 0, 0));
+            Assert.True(TheOutput[11].OutputDate == new DateTime(2020, 4, 5, 12, 0, 0));
+        }
+
+        [Fact]
+        public void Execute_recurring_MonthlyWeekly_more_per_weekday()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.WeekDay;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 4, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 1, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs the first weekday of every 3 months every 2 hours between 8:00 am and 12:00 am starting on 01/01/2020");
+            Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 1, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 1, 12, 0, 0));
+            Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 1, 2, 8, 0, 0));
+            Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 1, 2, 10, 0, 0));
+            Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 1, 2, 12, 0, 0));
+            Assert.True(TheOutput[6].OutputDate == new DateTime(2020, 1, 3, 8, 0, 0));
+            Assert.True(TheOutput[7].OutputDate == new DateTime(2020, 1, 3, 10, 0, 0));
+            Assert.True(TheOutput[8].OutputDate == new DateTime(2020, 1, 3, 12, 0, 0));
+            Assert.True(TheOutput[9].OutputDate == new DateTime(2020, 1, 4, 8, 0, 0));
+            Assert.True(TheOutput[10].OutputDate == new DateTime(2020, 1, 4, 10, 0, 0));
+            Assert.True(TheOutput[11].OutputDate == new DateTime(2020, 1, 4, 12, 0, 0));
+            Assert.True(TheOutput[12].OutputDate == new DateTime(2020, 1, 5, 8, 0, 0));
+            Assert.True(TheOutput[13].OutputDate == new DateTime(2020, 1, 5, 10, 0, 0));
+            Assert.True(TheOutput[14].OutputDate == new DateTime(2020, 1, 5, 12, 0, 0));
+            Assert.True(TheOutput[15].OutputDate == new DateTime(2020, 4, 1, 8, 0, 0));
+            Assert.True(TheOutput[16].OutputDate == new DateTime(2020, 4, 1, 10, 0, 0));
+            Assert.True(TheOutput[17].OutputDate == new DateTime(2020, 4, 1, 12, 0, 0));
+            Assert.True(TheOutput[18].OutputDate == new DateTime(2020, 4, 2, 8, 0, 0));
+            Assert.True(TheOutput[19].OutputDate == new DateTime(2020, 4, 2, 10, 0, 0));
+            Assert.True(TheOutput[20].OutputDate == new DateTime(2020, 4, 2, 12, 0, 0));
+            Assert.True(TheOutput[21].OutputDate == new DateTime(2020, 4, 3, 8, 0, 0));
+            Assert.True(TheOutput[22].OutputDate == new DateTime(2020, 4, 3, 10, 0, 0));
+            Assert.True(TheOutput[23].OutputDate == new DateTime(2020, 4, 3, 12, 0, 0));
+            Assert.True(TheOutput[24].OutputDate == new DateTime(2020, 4, 4, 8, 0, 0));
+            Assert.True(TheOutput[25].OutputDate == new DateTime(2020, 4, 4, 10, 0, 0));
+            Assert.True(TheOutput[26].OutputDate == new DateTime(2020, 4, 4, 12, 0, 0));
+            Assert.True(TheOutput[27].OutputDate == new DateTime(2020, 4, 5, 8, 0, 0));
+            Assert.True(TheOutput[28].OutputDate == new DateTime(2020, 4, 5, 10, 0, 0));
+            Assert.True(TheOutput[29].OutputDate == new DateTime(2020, 4, 5, 12, 0, 0));
+        }
+
+        [Fact]
+        public void Execute_recurring_MonthlyWeekly_more_per_day()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Day;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 4, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 1, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs the first day of every 3 months every 2 hours between 8:00 am and 12:00 am starting on 01/01/2020");
+            Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 1, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 1, 12, 0, 0));
+            Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 4, 1, 8, 0, 0));
+            Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 4, 1, 10, 0, 0));
+            Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 4, 1, 12, 0, 0));
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_one_hour()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.MonthlyMoreWeekStep = TypeWeekStep.First;
-            this.configuration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Thursday;
-            this.configuration.MonthlyMoreMonthSteps = 3;
-            this.configuration.DateStep = new DateTime(2020, 1, 1);
-            this.configuration.DateFrom = new DateTime(2020, 1, 1);
-            this.configuration.DateTo = new DateTime(2020, 2, 20);
-            this.configuration.HourStep = 1;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.process = new Process.Schedule(this.configuration);
-
-            int Index = this.GetIndexDay(TypeDayWeekStep.Saturday, this.configuration.DateFrom.Value);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Thursday;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 2, 20);
+            CurrentConfiguration.HourStep = 1;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 2, 8, 0, 0));
-            Assert.True(TheOutput[0].Description ==
-                string.Format(Global.ExitRecurring, Global.the + " " + this.configuration.MonthlyMoreWeekStep.ToString().ToLower() + " " + this.configuration.MonthlyMoreOrderDayWeekStep.ToString().ToLower() + " " + Global.of + " " + Global.every + " " + this.configuration.MonthlyMoreMonthSteps.ToString() + " " + Global.months,
-                            Global.every + " " + Global.hour,
-                            this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
-                            this.configuration.HourTo.Value.ToShortTimeString(),
-                            this.configuration.DateFrom.Value.ToShortDateString()));
+            Assert.True(TheOutput[0].Description == "Occurs the first thursday of every 3 months every hour between 8:00 am and 8:00 am starting on 01/01/2020");
         }
-
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_one_month()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.MonthlyMoreWeekStep = TypeWeekStep.First;
-            this.configuration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Thursday;
-            this.configuration.MonthlyMoreMonthSteps = 1;
-            this.configuration.DateStep = new DateTime(2020, 1, 1);
-            this.configuration.DateFrom = new DateTime(2020, 1, 1);
-            this.configuration.DateTo = new DateTime(2020, 1, 20);
-            this.configuration.HourStep = 1;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.process = new Process.Schedule(this.configuration);
-
-            int Index = this.GetIndexDay(TypeDayWeekStep.Saturday, this.configuration.DateFrom.Value);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Thursday;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 1;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 1, 20);
+            CurrentConfiguration.HourStep = 1;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 2, 8, 0, 0));
-            Assert.True(TheOutput[0].Description ==
-                string.Format(Global.ExitRecurring, Global.the + " " + this.configuration.MonthlyMoreWeekStep.ToString().ToLower() + " " + this.configuration.MonthlyMoreOrderDayWeekStep.ToString().ToLower() + " " + Global.of + " " + Global.every + " "  + Global.month,
-                            Global.every + " " + Global.hour,
-                            this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
-                            this.configuration.HourTo.Value.ToShortTimeString(),
-                            this.configuration.DateFrom.Value.ToShortDateString()));
+            Assert.True(TheOutput[0].Description == "Occurs the first thursday of every month every hour between 8:00 am and 8:00 am starting on 01/01/2020");
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_weekend_days_may()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.MonthlyMoreWeekStep = TypeWeekStep.First;
-            this.configuration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.WeekendDay;
-            this.configuration.MonthlyMoreMonthSteps = 3;
-            this.configuration.DateStep = new DateTime(2021, 5, 1);
-            this.configuration.DateFrom = new DateTime(2021, 5, 1);
-            this.configuration.DateTo = new DateTime(2021, 5, 20);
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.process = new Process.Schedule(this.configuration);
-
-            int Index = this.GetIndexDay(TypeDayWeekStep.WeekendDay, this.configuration.DateFrom.Value);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.WeekendDay;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2021, 5, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 5, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 5, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 5, 1, 8, 0, 0));
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 5, 2, 8, 0, 0));
@@ -1310,25 +1621,24 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_weekend_days2_january()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.MonthlyMoreWeekStep = TypeWeekStep.First;
-            this.configuration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.WeekendDay;
-            this.configuration.MonthlyMoreMonthSteps = 3;
-            this.configuration.DateStep = new DateTime(2021, 1, 1);
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.DateTo = new DateTime(2021, 1, 20);
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.process = new Process.Schedule(this.configuration);
-
-            int Index = this.GetIndexDay(TypeDayWeekStep.WeekendDay, this.configuration.DateFrom.Value);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.WeekendDay;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 1, 2, 8, 0, 0));
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 1, 3, 8, 0, 0));
@@ -1338,25 +1648,24 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_weekend_days_february()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.MonthlyMoreWeekStep = TypeWeekStep.First;
-            this.configuration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.WeekendDay;
-            this.configuration.MonthlyMoreMonthSteps = 3;
-            this.configuration.DateStep = new DateTime(2021, 2, 1);
-            this.configuration.DateFrom = new DateTime(2021, 2, 1);
-            this.configuration.DateTo = new DateTime(2021, 2, 20);
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.process = new Process.Schedule(this.configuration);
-
-            int Index = this.GetIndexDay(TypeDayWeekStep.WeekendDay, this.configuration.DateFrom.Value);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.WeekendDay;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2021, 2, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 2, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 2, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 2, 6, 8, 0, 0));
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 2, 7, 8, 0, 0));
@@ -1366,25 +1675,24 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_weekend_days_march()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.MonthlyMoreWeekStep = TypeWeekStep.First;
-            this.configuration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.WeekendDay;
-            this.configuration.MonthlyMoreMonthSteps = 3;
-            this.configuration.DateStep = new DateTime(2021, 3, 1);
-            this.configuration.DateFrom = new DateTime(2021, 3, 1);
-            this.configuration.DateTo = new DateTime(2021, 3, 20);
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.process = new Process.Schedule(this.configuration);
-
-            int Index = this.GetIndexDay(TypeDayWeekStep.WeekendDay, this.configuration.DateFrom.Value);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.WeekendDay;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2021, 3, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 3, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 3, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 3, 6, 8, 0, 0));
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 3, 7, 8, 0, 0));
@@ -1394,25 +1702,24 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_weekend_days_april()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.MonthlyMoreWeekStep = TypeWeekStep.First;
-            this.configuration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.WeekendDay;
-            this.configuration.MonthlyMoreMonthSteps = 3;
-            this.configuration.DateStep = new DateTime(2021, 4, 1);
-            this.configuration.DateFrom = new DateTime(2021, 4, 1);
-            this.configuration.DateTo = new DateTime(2021, 5, 20);
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.process = new Process.Schedule(this.configuration);
-
-            int Index = this.GetIndexDay(TypeDayWeekStep.WeekendDay, this.configuration.DateFrom.Value);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.WeekendDay;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2021, 4, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 4, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 5, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 4, 3, 8, 0, 0));
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 4, 4, 8, 0, 0));
@@ -1422,25 +1729,24 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_weekend_days_june()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.MonthlyMoreWeekStep = TypeWeekStep.First;
-            this.configuration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.WeekendDay;
-            this.configuration.MonthlyMoreMonthSteps = 3;
-            this.configuration.DateStep = new DateTime(2021, 6, 1);
-            this.configuration.DateFrom = new DateTime(2021, 6, 1);
-            this.configuration.DateTo = new DateTime(2021, 6, 20);
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.process = new Process.Schedule(this.configuration);
-
-            int Index = this.GetIndexDay(TypeDayWeekStep.WeekendDay, this.configuration.DateFrom.Value);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.WeekendDay;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2021, 6, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 6, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 6, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 6, 5, 8, 0, 0));
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 6, 6, 8, 0, 0));
@@ -1450,25 +1756,24 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_weekend_days_july()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.MonthlyMoreWeekStep = TypeWeekStep.First;
-            this.configuration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.WeekendDay;
-            this.configuration.MonthlyMoreMonthSteps = 3;
-            this.configuration.DateStep = new DateTime(2021, 7, 1);
-            this.configuration.DateFrom = new DateTime(2021, 7, 1);
-            this.configuration.DateTo = new DateTime(2021, 7, 20);
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.process = new Process.Schedule(this.configuration);
-
-            int Index = this.GetIndexDay(TypeDayWeekStep.WeekendDay, this.configuration.DateFrom.Value);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.WeekendDay;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2021, 7, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 7, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 7, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 7, 3, 8, 0, 0));
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 7, 4, 8, 0, 0));
@@ -1478,362 +1783,288 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_weekend_days_august()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.MonthlyMoreWeekStep = TypeWeekStep.First;
-            this.configuration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.WeekendDay;
-            this.configuration.MonthlyMoreMonthSteps = 3;
-            this.configuration.DateStep = new DateTime(2021, 8, 1);
-            this.configuration.DateFrom = new DateTime(2021, 8, 1);
-            this.configuration.DateTo = new DateTime(2021, 8, 20);
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.process = new Process.Schedule(this.configuration);
-
-            int Index = this.GetIndexDay(TypeDayWeekStep.WeekendDay, this.configuration.DateFrom.Value);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.WeekendDay;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2021, 8, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 8, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 8, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 8, 1, 8, 0, 0));
         }
-
-        private void CheckRecurringWeekendayOutput(Output[] TheOutput)
-        {
-            int IndexDay = 4;
-            int IndexMonth = 1;
-            int IndexAdd = 0;
-
-            for (int Index = 1; Index <= 4; Index++)
-            {
-                if (Index == 3)
-                {
-                    IndexDay = 4;
-                    IndexMonth = IndexMonth + 3;
-                }
-
-                Assert.True(TheOutput[Index - 1 + IndexAdd].OutputDate == new DateTime(2020, IndexMonth, IndexDay, 8, 0, 0));
-                Assert.True(TheOutput[Index - 1 + IndexAdd].Description ==
-                    this.GetMonthlyMoreRecurringOutputDescription());
-                Assert.True(TheOutput[Index + IndexAdd].OutputDate == new DateTime(2020, IndexMonth, IndexDay, 10, 0, 0));
-                Assert.True(TheOutput[Index + IndexAdd].Description ==
-                    this.GetMonthlyMoreRecurringOutputDescription());
-                Assert.True(TheOutput[Index + 1 + IndexAdd].OutputDate == new DateTime(2020, IndexMonth, IndexDay, 12, 0, 0));
-                Assert.True(TheOutput[Index + 1 + IndexAdd].Description ==
-                    this.GetMonthlyMoreRecurringOutputDescription());
-
-                IndexDay = IndexDay + 1;
-                IndexAdd = IndexAdd + 2;
-            }
-        }
-
-        private void CheckRecurringWeekdayOutput(Output[] TheOutput)
-        {
-            int IndexAdd = 0;
-            int IndexMonth = 1;
-            int IndexDay = 0;
-
-            for (int Index = 1; Index <= 10; Index++)
-            {
-                if (Index == 6)
-                {
-                    IndexMonth = IndexMonth  + 3;
-                    IndexDay = 1;
-                }
-                else
-                {
-                    IndexDay = IndexDay + 1;
-                }
-
-                Assert.True(TheOutput[Index - 1 + IndexAdd].OutputDate == new DateTime(2020, IndexMonth, IndexDay, 8, 0, 0));
-                Assert.True(TheOutput[Index - 1 + IndexAdd].Description ==
-                    this.GetMonthlyMoreRecurringOutputDescription());
-                Assert.True(TheOutput[Index + IndexAdd].OutputDate == new DateTime(2020, IndexMonth, IndexDay, 10, 0, 0));
-                Assert.True(TheOutput[Index + IndexAdd].Description ==
-                    this.GetMonthlyMoreRecurringOutputDescription());
-                Assert.True(TheOutput[Index + 1 + IndexAdd].OutputDate == new DateTime(2020, IndexMonth, IndexDay, 12, 0, 0));
-                Assert.True(TheOutput[Index + 1 + IndexAdd].Description ==
-                    this.GetMonthlyMoreRecurringOutputDescription());
-
-                IndexAdd = IndexAdd + 2;
-            }
-        }
-
-        private void CheckRecurringOutput(int Index, Output[] TheOutput)
-        {
-            Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, Index, 8, 0, 0));
-            Assert.True(TheOutput[0].Description ==
-                this.GetMonthlyMoreRecurringOutputDescription());
-            Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, Index, 10, 0, 0));
-            Assert.True(TheOutput[1].Description ==
-                this.GetMonthlyMoreRecurringOutputDescription());
-            Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, Index, 12, 0, 0));
-            Assert.True(TheOutput[2].Description ==
-                this.GetMonthlyMoreRecurringOutputDescription());
-            Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 4, Index, 8, 0, 0));
-            Assert.True(TheOutput[3].Description ==
-                this.GetMonthlyMoreRecurringOutputDescription());
-            Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 4, Index, 10, 0, 0));
-            Assert.True(TheOutput[4].Description ==
-                this.GetMonthlyMoreRecurringOutputDescription());
-            Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 4, Index, 12, 0, 0));
-            Assert.True(TheOutput[5].Description ==
-                this.GetMonthlyMoreRecurringOutputDescription());
-        }
-
-        private int GetIndexDay(TypeDayWeekStep TheDay, DateTime TheDayFrom)
-        {
-            int Index = Convert.ToInt32(TheDay) - 1;
-
-            if (TheDay == TypeDayWeekStep.Monday || TheDay == TypeDayWeekStep.Tuesday)
-            {
-                Index = Convert.ToInt32(TheDay) + 6;
-            }
-            if (TheDay == TypeDayWeekStep.Day)
-            {
-                Index = (new DateTime(TheDayFrom.Year, TheDayFrom.Month, 1)).Day;
-            }
-
-            return Index;
-        }
-
-        private string GetMonthlyMoreRecurringOutputDescription()
-        {
-            return string.Format(Global.ExitRecurring, Global.the + " " + this.configuration.MonthlyMoreWeekStep.ToString().ToLower() + " " +
-                            this.configuration.MonthlyMoreOrderDayWeekStep.ToString().ToLower() + " " + Global.of + " " + Global.every + " " +
-                            this.configuration.MonthlyMoreMonthSteps.ToString() + " " + Global.months,
-                            Global.every + " " + this.configuration.HourStep.ToString() + " " + Global.hours,
-                            this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
-                            this.configuration.HourTo.Value.ToShortTimeString(),
-                            this.configuration.DateFrom.Value.ToShortDateString());
-        }
-
-        [Theory]
-        [InlineData(TypeWeekStep.First)]
-        [InlineData(TypeWeekStep.Second)]
-        [InlineData(TypeWeekStep.Third)]
-        [InlineData(TypeWeekStep.Fourth)]
-        [InlineData(TypeWeekStep.Last)]
-        public void Execute_recurring_MonthlyWeekly_more_per_week(TypeWeekStep TheWeek)
+              
+        [Fact]
+        public void Execute_recurring_MonthlyWeekly_more_per_first_week()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.MonthlyMoreWeekStep = TheWeek;
-            this.configuration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Thursday;
-            this.configuration.MonthlyMoreMonthSteps = 3;
-            this.configuration.DateStep = new DateTime(2020, 1, 1);
-            this.configuration.DateFrom = new DateTime(2020, 1, 1);
-            this.configuration.DateTo = new DateTime(2020, 4, 20);
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
-            this.process = new Process.Schedule(this.configuration);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Thursday;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 4, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
-            int IndexAdd = 0;
-            int IndexDay = 2;
-            int IndexMonth = 1;
+            //Assert
+            Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 2, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs the first thursday of every 3 months every 2 hours between 8:00 am and 12:00 am starting on 01/01/2020");
+            Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 2, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 2, 12, 0, 0));
+        }
 
-            if (this.configuration.MonthlyMoreWeekStep != TypeWeekStep.First)
-            {
-                IndexDay = IndexDay - 7 + (7 * (Convert.ToInt32(this.configuration.MonthlyMoreWeekStep)));
-            }
+        [Fact]
+        public void Execute_recurring_MonthlyWeekly_more_per_second_week()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.Second;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Thursday;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 4, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
-            for (int Index = 1; Index <= 2; Index++)
-            {
-                if (Index == 2)
-                {
-                    IndexMonth = IndexMonth + 3;
-                }
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
-                if (Index - 1 + IndexAdd == TheOutput.Length)
-                {
-                    break;
-                }
+            //Assert
+            Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 9, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs the second thursday of every 3 months every 2 hours between 8:00 am and 12:00 am starting on 01/01/2020");
+            Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 9, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 9, 12, 0, 0));
+        }
 
-                //Assert
-                Assert.True(TheOutput[Index - 1 + IndexAdd].OutputDate == new DateTime(2020, IndexMonth, IndexDay, 8, 0, 0));
-                Assert.True(TheOutput[Index - 1 + IndexAdd].Description ==
-                    this.GetMonthlyMoreRecurringOutputDescription());
-                Assert.True(TheOutput[Index + IndexAdd].OutputDate == new DateTime(2020, IndexMonth, IndexDay, 10, 0, 0));
-                Assert.True(TheOutput[Index + IndexAdd].Description ==
-                    this.GetMonthlyMoreRecurringOutputDescription());
-                Assert.True(TheOutput[Index + 1 + IndexAdd].OutputDate == new DateTime(2020, IndexMonth, IndexDay, 12, 0, 0));
-                Assert.True(TheOutput[Index + 1 + IndexAdd].Description ==
-                    this.GetMonthlyMoreRecurringOutputDescription());
+        [Fact]
+        public void Execute_recurring_MonthlyWeekly_more_per_third_week()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.Third;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Thursday;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 4, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
-                IndexAdd = IndexAdd + 2;
-            }
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 16, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs the third thursday of every 3 months every 2 hours between 8:00 am and 12:00 am starting on 01/01/2020");
+            Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 16, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 16, 12, 0, 0));
+        }
+
+        [Fact]
+        public void Execute_recurring_MonthlyWeekly_more_per_fourth_week()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.Fourth;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Thursday;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 4, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 23, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs the fourth thursday of every 3 months every 2 hours between 8:00 am and 12:00 am starting on 01/01/2020");
+            Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 23, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 23, 12, 0, 0));
+        }
+
+        [Fact]
+        public void Execute_recurring_MonthlyWeekly_more_per_last_week()
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.Last;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Thursday;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2020, 4, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 12, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            //Act
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
+
+            //Assert
+            Assert.True(TheOutput[0].OutputDate == new DateTime(2020, 1, 30, 8, 0, 0));
+            Assert.True(TheOutput[0].Description == "Occurs the last thursday of every 3 months every 2 hours between 8:00 am and 12:00 am starting on 01/01/2020");
+            Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 30, 10, 0, 0));
+            Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 30, 12, 0, 0));
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_monday_day_1()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.MonthlyMoreWeekStep = TypeWeekStep.First;
-            this.configuration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Monday;
-            this.configuration.MonthlyMoreMonthSteps = 3;
-            this.configuration.DateStep = new DateTime(2021, 2, 1);
-            this.configuration.DateFrom = new DateTime(2021, 2, 1);
-            this.configuration.DateTo = new DateTime(2021, 2, 20);
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.process = new Process.Schedule(this.configuration);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Monday;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2021, 2, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 2, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 2, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 2, 1, 8, 0, 0));
-            Assert.True(TheOutput[0].Description ==
-                string.Format(Global.ExitRecurring, Global.the + " " + this.configuration.MonthlyMoreWeekStep.ToString().ToLower() + " " + this.configuration.MonthlyMoreOrderDayWeekStep.ToString().ToLower() + " " + Global.of + " " + Global.every + " " +
-                            this.configuration.MonthlyMoreMonthSteps.ToString() + " " + Global.months,
-                            Global.every + " " + this.configuration.HourStep.ToString() + " " + Global.hours,
-                            this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
-                            this.configuration.HourTo.Value.ToShortTimeString(),
-                            this.configuration.DateFrom.Value.ToShortDateString()));
+            Assert.True(TheOutput[0].Description == "Occurs the first monday of every 3 months every 2 hours between 8:00 am and 8:00 am starting on 01/02/2021"); ;
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_tuesday_day_1()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.MonthlyMoreWeekStep = TypeWeekStep.First;
-            this.configuration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Tuesday;
-            this.configuration.MonthlyMoreMonthSteps = 3;
-            this.configuration.DateStep = new DateTime(2021, 6, 1);
-            this.configuration.DateFrom = new DateTime(2021, 6, 1);
-            this.configuration.DateTo = new DateTime(2021, 7, 20);
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.process = new Process.Schedule(this.configuration);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Tuesday;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2021, 6, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 6, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 7, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 6, 1, 8, 0, 0));
-            Assert.True(TheOutput[0].Description ==
-                string.Format(Global.ExitRecurring, Global.the + " " + this.configuration.MonthlyMoreWeekStep.ToString().ToLower() + " " + this.configuration.MonthlyMoreOrderDayWeekStep.ToString().ToLower() + " " + Global.of + " " + Global.every + " " +
-                            this.configuration.MonthlyMoreMonthSteps.ToString() + " " + Global.months,
-                            Global.every + " " + this.configuration.HourStep.ToString() + " " + Global.hours,
-                            this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
-                            this.configuration.HourTo.Value.ToShortTimeString(),
-                            this.configuration.DateFrom.Value.ToShortDateString()));
+            Assert.True(TheOutput[0].Description == "Occurs the first tuesday of every 3 months every 2 hours between 8:00 am and 8:00 am starting on 01/06/2021");
         }
-
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_friday_day_1()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.MonthlyMoreWeekStep = TypeWeekStep.First;
-            this.configuration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Friday;
-            this.configuration.MonthlyMoreMonthSteps = 3;
-            this.configuration.DateStep = new DateTime(2021,1, 1);
-            this.configuration.DateFrom = new DateTime(2021, 1, 1);
-            this.configuration.DateTo = new DateTime(2021, 2, 20);
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.process = new Process.Schedule(this.configuration);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Friday;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 2, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 1, 1, 8, 0, 0));
-            Assert.True(TheOutput[0].Description ==
-                string.Format(Global.ExitRecurring, Global.the + " " + this.configuration.MonthlyMoreWeekStep.ToString().ToLower() + " " + this.configuration.MonthlyMoreOrderDayWeekStep.ToString().ToLower() + " " + Global.of + " " + Global.every + " " +
-                            this.configuration.MonthlyMoreMonthSteps.ToString() + " " + Global.months,
-                            Global.every + " " + this.configuration.HourStep.ToString() + " " + Global.hours,
-                            this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
-                            this.configuration.HourTo.Value.ToShortTimeString(),
-                            this.configuration.DateFrom.Value.ToShortDateString()));
+            Assert.True(TheOutput[0].Description == "Occurs the first friday of every 3 months every 2 hours between 8:00 am and 8:00 am starting on 01/01/2021");
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_sunday_day_1()
         {
             // Arrange
-            this.configuration.Enabled = true;
-            this.configuration.TimeType = TypeStep.Recurring;
-            this.configuration.TypeRecurring = TypeTimeStep.Monthly;
-            this.configuration.MonthlyMore = true;
-            this.configuration.MonthlyMoreWeekStep = TypeWeekStep.First;
-            this.configuration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Sunday;
-            this.configuration.MonthlyMoreMonthSteps = 3;
-            this.configuration.DateStep = new DateTime(2021, 8, 1);
-            this.configuration.DateFrom = new DateTime(2021, 8, 1);
-            this.configuration.DateTo = new DateTime(2021, 9, 20);
-            this.configuration.HourStep = 2;
-            this.configuration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.configuration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
-            this.process = new Process.Schedule(this.configuration);
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Recurring;
+            CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
+            CurrentConfiguration.MonthlyMore = true;
+            CurrentConfiguration.MonthlyMoreWeekStep = TypeWeekStep.First;
+            CurrentConfiguration.MonthlyMoreOrderDayWeekStep = TypeDayWeekStep.Sunday;
+            CurrentConfiguration.MonthlyMoreMonthSteps = 3;
+            CurrentConfiguration.DateStep = new DateTime(2021, 8, 1);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 8, 1);
+            CurrentConfiguration.DateTo = new DateTime(2021, 9, 20);
+            CurrentConfiguration.HourStep = 2;
+            CurrentConfiguration.HourFrom = new DateTime(1900, 1, 1, 8, 0, 0);
+            CurrentConfiguration.HourTo = new DateTime(1900, 1, 1, 8, 0, 0);
+            this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
-            Output[] TheOutput = this.process.Execute(this.configuration.DateStep.Value);
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value);
 
             //Assert
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 8, 1, 8, 0, 0));
-            Assert.True(TheOutput[0].Description ==
-                string.Format(Global.ExitRecurring, Global.the + " " + this.configuration.MonthlyMoreWeekStep.ToString().ToLower() + " " + this.configuration.MonthlyMoreOrderDayWeekStep.ToString().ToLower() + " " + Global.of + " " + Global.every + " " +
-                            this.configuration.MonthlyMoreMonthSteps.ToString() + " " + Global.months,
-                            Global.every + " " + this.configuration.HourStep.ToString() + " " + Global.hours,
-                            this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
-                            this.configuration.HourTo.Value.ToShortTimeString(),
-                            this.configuration.DateFrom.Value.ToShortDateString()));
-        }
-
-        private string GenerateWeeklyOutput(List<DayOfWeek> TheWeek)
-        {
-            string DaysString = "";
-
-            for (int Index = 0; Index < TheWeek.Count; Index++)
-            {
-                if (Index != TheWeek.Count - 2 && Index != TheWeek.Count - 1)
-                    DaysString = DaysString + TheWeek[Index].ToString() + ", ";
-                else if (Index == TheWeek.Count - 1)
-                    DaysString = DaysString + TheWeek[Index].ToString();
-                else if (Index == TheWeek.Count - 2)
-                    DaysString = DaysString + TheWeek[Index].ToString() + " and ";
-            }
-
-            if (this.configuration.WeekStep > 1)
-            {
-                return string.Format(Global.ExitRecurring, Global.every + " " + this.configuration.WeekStep.ToString() +
-                    " " + Global.weeks + " " + Global.on + " " + DaysString, Global.every + " " + this.configuration.HourStep.ToString() + " " + Global.hours, this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
-                    this.configuration.HourTo.Value.ToShortTimeString(), this.configuration.DateFrom.Value.ToShortDateString());
-            }
-            else
-            {
-                return
-                   string.Format(Global.ExitRecurring, Global.every + " " +
-                   " " + Global.week + " " + Global.on + " " + DaysString, Global.every + " " + this.configuration.HourStep.ToString() + " " + Global.hours, this.configuration.HourFrom.Value.ToShortTimeString() + " and " +
-                   this.configuration.HourTo.Value.ToShortTimeString(), this.configuration.DateFrom.Value.ToShortDateString());
-            }
+            Assert.True(TheOutput[0].Description == "Occurs the first sunday of every 3 months every 2 hours between 8:00 am and 8:00 am starting on 01/08/2021");
         }
     }
 }
