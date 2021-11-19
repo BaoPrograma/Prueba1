@@ -243,8 +243,16 @@ namespace Schedule.Process
                         MonthStr = Global.month;
                     }
 
-                    TheStepStr = Global.the + " " + this.configuration.MonthlyMoreWeekStep.ToString().ToLower() + " " +
-                        this.configuration.MonthlyMoreOrderDayWeekStep.ToString().ToLower() + " " + Global.of + " " + Global.every + " " + MonthStr;
+                    if (this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.WeekendDay)
+                    {
+                        TheStepStr = Global.the + " " + this.configuration.MonthlyMoreWeekStep.ToString().ToLower() + " " +
+                            Global.weekendday + " " + Global.of + " " + Global.every + " " + MonthStr;
+                    }
+                    else
+                    {
+                        TheStepStr = Global.the + " " + this.configuration.MonthlyMoreWeekStep.ToString().ToLower() + " " +
+                            this.configuration.MonthlyMoreOrderDayWeekStep.ToString().ToLower() + " " + Global.of + " " + Global.every + " " + MonthStr;
+                    }
                 }
             }
 
@@ -259,11 +267,11 @@ namespace Schedule.Process
             for (int Index = 0; Index < this.weeklyVar.Length; Index++)
             {
                 if (Index != this.weeklyVar.Length - 2 && Index != this.weeklyVar.Length - 1)
-                    DaysString = DaysString + this.weeklyVar[Index].ToString() + ", ";
+                    DaysString = DaysString + this.weeklyVar[Index].ToString().ToLower() + ", ";
                 else if (Index == this.weeklyVar.Length - 1)
-                    DaysString = DaysString + this.weeklyVar[Index].ToString();
+                    DaysString = DaysString + this.weeklyVar[Index].ToString().ToLower();
                 else if (Index == this.weeklyVar.Length - 2)
-                    DaysString = DaysString + this.weeklyVar[Index].ToString() + " and ";
+                    DaysString = DaysString + this.weeklyVar[Index].ToString().ToLower() + " and ";
             }
 
             if (this.configuration.WeekStep > 1)
@@ -863,9 +871,9 @@ namespace Schedule.Process
         private string GetHourDayString()
         {
             return (this.configuration.HourFrom != null ? this.configuration.HourFrom.Value.ToShortTimeString() :
-                            new DateTime(1900, 1, 1, 0, 0, 0).ToShortTimeString()) + " and " +
+                            new DateTime(1900, 1, 1, 0, 0, 0).ToShortTimeString()) + " am and " +
                             (this.configuration.HourTo != null ? this.configuration.HourTo.Value.ToShortTimeString() :
-                            new DateTime(1900, 1, 1, 23, 59, 0).ToShortTimeString());
+                            new DateTime(1900, 1, 1, 23, 59, 0).ToShortTimeString()) + " am";
         }
 
         private Output[] ExecuteMonthlyWeeklyHours(string TheTypeStepStr,
