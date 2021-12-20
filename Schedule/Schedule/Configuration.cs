@@ -46,6 +46,8 @@ namespace Schedule.Config
         public TypeDayWeekStep? MonthlyMoreOrderDayWeekStep;
         public int? MonthlyMoreMonthSteps;
 
+        public Languages Language;
+
         #endregion
     }
 }

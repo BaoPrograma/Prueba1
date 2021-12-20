@@ -46,4 +46,11 @@ namespace Schedule
         Once,
         Every
     }
+
+    public enum Languages
+    {
+        en_GB = 0,
+        es_ES = 1,
+        en_US = 2
+    }
 }

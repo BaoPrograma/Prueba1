@@ -2,38 +2,24 @@
 using Schedule.RecursosTextos;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Threading;
 
 namespace Schedule.Process
 {
     public class Schedule
     {
-        private Configuration configuration;
-        private DayOfWeek[] weeklyVar;
-        private List<DayOfWeek> monthlyWeekVar;
+        private CultureInfo culture;
 
         public Schedule(Configuration TheConfiguration)
         {
             this.ValidateConfiguration(TheConfiguration);
 
-            this.configuration = TheConfiguration;
-            this.monthlyWeekVar = new List<DayOfWeek>();
-            if (this.configuration.TypeRecurring == TypeTimeStep.Weekly)
-            {
-                this.PrepareWeeklyVar();
-            }
-            else if (this.configuration.TypeRecurring == TypeTimeStep.Monthly)
-            {
-                this.PrepareMonthlyWeekVar();
-            }
-        }
+            this.culture = CultureInfo.GetCultureInfo(
+                TheConfiguration.Language.ToString());
 
-        public List<DayOfWeek> MonthlyWeekVar
-        {
-            get
-            {
-                return this.monthlyWeekVar;
-            }
+            Thread.CurrentThread.CurrentUICulture = this.culture;
         }
 
         private void ValidateConfiguration(Configuration TheConfiguration)
@@ -42,97 +28,53 @@ namespace Schedule.Process
                 throw new ScheduleException(Global.ValidateConfiguration);
         }
 
-        private void PrepareWeeklyVar()
+        private DayOfWeek[] PrepareWeeklyVar(Configuration TheConfiguration)
         {
             List<DayOfWeek> WeekList = new List<DayOfWeek>();
 
-            if (this.configuration.WeeklyMonday)
+            if (TheConfiguration.WeeklyMonday)
                 WeekList.Add(DayOfWeek.Monday);
-            if (this.configuration.WeeklyTuesday)
+            if (TheConfiguration.WeeklyTuesday)
                 WeekList.Add(DayOfWeek.Tuesday);
-            if (this.configuration.WeeklyWednesday)
+            if (TheConfiguration.WeeklyWednesday)
                 WeekList.Add(DayOfWeek.Wednesday);
-            if (this.configuration.WeeklyThursday)
+            if (TheConfiguration.WeeklyThursday)
                 WeekList.Add(DayOfWeek.Thursday);
-            if (this.configuration.WeeklyFriday)
+            if (TheConfiguration.WeeklyFriday)
                 WeekList.Add(DayOfWeek.Friday);
-            if (this.configuration.WeeklySaturday)
+            if (TheConfiguration.WeeklySaturday)
                 WeekList.Add(DayOfWeek.Saturday);
-            if (this.configuration.WeeklySunday)
+            if (TheConfiguration.WeeklySunday)
                 WeekList.Add(DayOfWeek.Sunday);
 
-            this.weeklyVar = WeekList.ToArray();
+            return WeekList.ToArray();
         }
 
-        private void PrepareMonthlyWeekVar()
+        public Output[] Execute(DateTime TheDate, Configuration TheConfiguration)
         {
-            if (this.monthlyWeekVar != null)
+            if (TheConfiguration.Enabled)
             {
-                switch (this.configuration.MonthlyMoreOrderDayWeekStep)
-                {
-                    case TypeDayWeekStep.Day:
-                        this.monthlyWeekVar.AddRange(new DayOfWeek[] { DayOfWeek.Monday,
-                    DayOfWeek.Tuesday, DayOfWeek.Wednesday,DayOfWeek.Thursday,
-                    DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday});
-                        break;
-                    case TypeDayWeekStep.Monday:
-                        this.monthlyWeekVar.Add(DayOfWeek.Monday);
-                        break;
-                    case TypeDayWeekStep.Tuesday:
-                        this.monthlyWeekVar.Add(DayOfWeek.Tuesday);
-                        break;
-                    case TypeDayWeekStep.Wednesday:
-                        this.monthlyWeekVar.Add(DayOfWeek.Wednesday);
-                        break;
-                    case TypeDayWeekStep.Thursday:
-                        this.monthlyWeekVar.Add(DayOfWeek.Thursday);
-                        break;
-                    case TypeDayWeekStep.Friday:
-                        this.monthlyWeekVar.Add(DayOfWeek.Friday);
-                        break;
-                    case TypeDayWeekStep.Saturday:
-                        this.monthlyWeekVar.Add(DayOfWeek.Saturday);
-                        break;
-                    case TypeDayWeekStep.Sunday:
-                        this.monthlyWeekVar.Add(DayOfWeek.Sunday);
-                        break;
-                    case TypeDayWeekStep.WeekDay:
-                        this.monthlyWeekVar.AddRange(new DayOfWeek[] { DayOfWeek.Monday,
-                    DayOfWeek.Tuesday, DayOfWeek.Wednesday,DayOfWeek.Thursday,
-                    DayOfWeek.Friday });
-                        break;
-                    case TypeDayWeekStep.WeekendDay:
-                        this.monthlyWeekVar.AddRange(new DayOfWeek[] { DayOfWeek.Saturday, DayOfWeek.Sunday });
-                        break;
-                }
-            }
-        }
+                this.ValidateDatesConfiguration(TheConfiguration);
 
-        public Output[] Execute(DateTime TheDate)
-        {
-            if (this.configuration.Enabled)
-            {
-                this.ValidateDatesConfiguration();
+                DateTime TheDateAux = TheConfiguration.DateFrom != null &&
+                    TheDate > TheConfiguration.DateFrom ? TheDate : TheConfiguration.DateFrom.Value;
 
-                DateTime TheDateAux = this.configuration.DateFrom != null &&
-                    TheDate > this.configuration.DateFrom ? TheDate : this.configuration.DateFrom.Value;
-
-                return this.ExecuteDateStep(TheDateAux);
+                return this.ExecuteDateStep(TheDateAux, TheConfiguration);
             }
             else
             {
                 return new Output[] {ReturnOuput("",
-                   TheDate, TheDate, this.configuration.DateFrom, null)};
+                   TheDate, TheDate, TheConfiguration.DateFrom, null)};
             }
         }
 
-        private void ValidateDatesConfiguration()
+        private void ValidateDatesConfiguration(Configuration TheConfiguration)
         {
-            if (this.configuration.DateStep == null)
+            if (TheConfiguration.DateStep == null)
             {
                 throw new ScheduleException(Global.ValidateDateConfiguration);
             }
-            if (this.configuration.DateFrom == null)
+            if (TheConfiguration.DateFrom == null)
             {
                 throw new ScheduleException(Global.ValidateDateConfiguration);
             }
@@ -140,7 +82,7 @@ namespace Schedule.Process
 
         private Output ReturnOuput(string TheWeeStepStr, DateTime TheDateStep, DateTime TheHourStep, DateTime? TheDateFrom, DateTime? TheHour)
         {
-            string TheDateStepStr = TheDateStep.ToShortDateString();
+            string TheDateStepStr = TheDateStep.ToString("d", this.culture);
 
             if (TheHourStep.TimeOfDay > new TimeSpan(00, 00, 00))
             {
@@ -152,106 +94,112 @@ namespace Schedule.Process
             TheExit.Description =
                 string.Format(Global.Output, TheWeeStepStr, TheDateStepStr) +
                 (TheDateFrom != null ? " " + string.Format(Global.StartingOn
-                , TheDateFrom.Value.ToShortDateString()) : "") +
+                , TheDateFrom.Value.ToString("d", this.culture)) : "") +
                 " " + (TheHour != null ? TheHour.Value.ToShortTimeString() : "00:00");
 
             return TheExit;
         }
 
-        private Output[] ExecuteDateStep(DateTime TheDate)
+        private Output[] ExecuteDateStep(DateTime TheDate, Configuration TheConfiguration)
         {
-            string TheStepStr = this.GetStepDescription();
+            string TheStepStr = this.GetStepDescription(TheConfiguration);
 
-            if (this.configuration.TimeType == TypeStep.Once)
+            if (TheConfiguration.TimeType == TypeStep.Once)
             {
-                return ExecuteOnce(TheStepStr);
+                return ExecuteOnce(TheStepStr, TheConfiguration);
             }
             else
             {
-                return ExecuteRecurring(TheDate, TheStepStr);
+                return ExecuteRecurring(TheDate, TheStepStr, TheConfiguration);
             }
         }
 
-        private void ValidateRecurringConfiguration()
+        private void ValidateRecurringConfiguration(Configuration TheConfiguration)
         {
-            if (this.configuration.HourStep < 0)
+            if (TheConfiguration.HourStep < 0)
                 throw new ScheduleException(Global.ValidateHourStep);
 
-            if (this.configuration.TypeRecurring == null)
+            if (TheConfiguration.TypeRecurring == null)
                 throw new ScheduleException(Global.ValidateRecurringFrequency);
 
-            if (this.configuration.MonthlyOnce == true && this.configuration.MonthlyOnceMonthSteps == null)
+            if (TheConfiguration.MonthlyOnce == true && TheConfiguration.MonthlyOnceMonthSteps == null)
                 throw new ScheduleException(Global.ValidateMonthlyConfiguration);
 
-            if (this.configuration.MonthlyMore == true && this.configuration.MonthlyMoreMonthSteps == null)
+            if (TheConfiguration.MonthlyMore == true && TheConfiguration.MonthlyMoreMonthSteps == null)
                 throw new ScheduleException(Global.ValidateMonthlyConfiguration);
+
+            if (TheConfiguration.MonthlyMore == true && TheConfiguration.MonthlyMoreOrderDayWeekStep == null)
+                throw new ScheduleException(Global.ValidateMonthlyMoreWeekStep);
         }
 
-        private string GetStepDescription()
+        private string GetStepDescription(Configuration TheConfiguration)
         {
             string TheStepStr = "";
-            if (this.configuration.TimeType == TypeStep.Once)
+            if (TheConfiguration.TimeType == TypeStep.Once)
             {
                 TheStepStr = Global.once;
             }
             else
             {
-                this.ValidateRecurringConfiguration();
+                this.ValidateRecurringConfiguration(TheConfiguration);
 
-                TheStepStr = this.GetStepRecurringDescription(TheStepStr);
+                TheStepStr = this.GetStepRecurringDescription(TheStepStr, TheConfiguration);
             }
 
             return TheStepStr;
         }
 
-        private string GetStepRecurringDescription(string TheStepStr)
+        private string GetStepRecurringDescription(string TheStepStr, Configuration TheConfiguration)
         {
-            if (this.configuration.TypeRecurring == TypeTimeStep.Daily)
+            if (TheConfiguration.TypeRecurring == TypeTimeStep.Daily)
             {
-                TheStepStr = Global.every + " " + (this.configuration.DailyStep == 1 ? "" + Global.day : this.configuration.DailyStep.ToString() + " " + Global.days);
+                TheStepStr = Global.every + " " + (TheConfiguration.DailyStep == 1 ? "" + Global.day : TheConfiguration.DailyStep.ToString() + " " + Global.days);
             }
-            else if (this.configuration.TypeRecurring == TypeTimeStep.Weekly)
+            else if (TheConfiguration.TypeRecurring == TypeTimeStep.Weekly)
             {
-                TheStepStr = this.GetStepRecurringWeeklyDescription();
+                TheStepStr = this.GetStepRecurringWeeklyDescription(TheConfiguration);
             }
             else
             {
                 string MonthStr = "";
                
-                if (this.configuration.MonthlyOnce == true)
+                if (TheConfiguration.MonthlyOnce == true)
                 {
-                    if (this.configuration.MonthlyOnceMonthSteps > 1)
+                    if (TheConfiguration.MonthlyOnceMonthSteps > 1)
                     {
-                        MonthStr = this.configuration.MonthlyOnceMonthSteps.Value.ToString() + " " + Global.months;
+                        MonthStr = TheConfiguration.MonthlyOnceMonthSteps.Value.ToString() + " " + Global.months;
                     }
                     else
                     {
                         MonthStr = Global.month;
                     }
 
-                    TheStepStr = Global.day + " " + this.configuration.MonthlyOnceDay.Value.ToString() +
+                    TheStepStr = Global.day + " " + TheConfiguration.MonthlyOnceDay.Value.ToString() +
                         " " + Global.of + " " + Global.every + " " + MonthStr;
                 }
-                else if (this.configuration.MonthlyMore == true)
+                else if (TheConfiguration.MonthlyMore == true)
                 {
-                    if (this.configuration.MonthlyMoreMonthSteps > 1)
+                    if (TheConfiguration.MonthlyMoreMonthSteps > 1)
                     {
-                        MonthStr = this.configuration.MonthlyMoreMonthSteps.Value.ToString() + " " + Global.months;
+                        MonthStr = TheConfiguration.MonthlyMoreMonthSteps.Value.ToString() + " " + Global.months;
                     }
                     else
                     {
                         MonthStr = Global.month;
                     }
 
-                    if (this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.WeekendDay)
+
+                    if (TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.WeekendDay)
                     {
-                        TheStepStr = Global.the + " " + this.configuration.MonthlyMoreWeekStep.ToString().ToLower() + " " +
-                            Global.weekendday + " " + Global.of + " " + Global.every + " " + MonthStr;
+                        TheStepStr = Global.the + " " + this.GetMonthlyOrderString(TheConfiguration) + " " +
+                            Schedule.GetDayStepDescription(
+                               TheConfiguration.MonthlyMoreOrderDayWeekStep.Value) + " " + Global.of + " " + Global.every + " " + MonthStr;
                     }
                     else
                     {
-                        TheStepStr = Global.the + " " + this.configuration.MonthlyMoreWeekStep.ToString().ToLower() + " " +
-                            this.configuration.MonthlyMoreOrderDayWeekStep.ToString().ToLower() + " " + Global.of + " " + Global.every + " " + MonthStr;
+                        TheStepStr = Global.the + " " + this.GetMonthlyOrderString(TheConfiguration) + " " +
+                           Schedule.GetDayStepDescription(
+                               TheConfiguration.MonthlyMoreOrderDayWeekStep.Value).ToLower() + " " + Global.of + " " + Global.every + " " + MonthStr;
                     }
                 }
             }
@@ -259,25 +207,97 @@ namespace Schedule.Process
             return TheStepStr;
         }
 
-        private string GetStepRecurringWeeklyDescription()
+        private static string GetDayStepDescription(TypeDayWeekStep Step)
+        {
+            switch (Step)
+            {
+                case TypeDayWeekStep.Monday:
+                    return Global.Monday;
+                case TypeDayWeekStep.Tuesday:
+                    return Global.Tuesday;
+                case TypeDayWeekStep.Wednesday:
+                    return Global.Wednesday;
+                case TypeDayWeekStep.Thursday:
+                    return Global.Thursday;
+                case TypeDayWeekStep.Friday:
+                    return Global.Friday;
+                case TypeDayWeekStep.Saturday:
+                    return Global.Saturday;
+                case TypeDayWeekStep.Sunday:
+                    return Global.Sunday;
+                case TypeDayWeekStep.Day:
+                    return Global.day;
+                case TypeDayWeekStep.WeekDay:
+                    return Global.WeekDay;
+                case TypeDayWeekStep.WeekendDay:
+                    return Global.weekend;
+            }
+
+            return string.Empty;
+        }
+
+        private static string GetDayDescription(DayOfWeek Day)
+        {
+            switch(Day)
+            {
+                case DayOfWeek.Monday:
+                    return Global.Monday;
+                case DayOfWeek.Tuesday:
+                    return Global.Tuesday;
+                case DayOfWeek.Wednesday:
+                    return Global.Wednesday;
+                case DayOfWeek.Thursday:
+                    return Global.Thursday;
+                case DayOfWeek.Friday:
+                    return Global.Friday;
+                case DayOfWeek.Saturday:
+                    return Global.Saturday;
+                case DayOfWeek.Sunday:
+                    return Global.Sunday;
+            }
+
+            return string.Empty;
+        }
+
+        private string GetMonthlyOrderString(Configuration TheConfiguration)
+        {
+            switch(TheConfiguration.MonthlyMoreWeekStep)
+            {
+                case TypeWeekStep.First:
+                    return Global.First.ToLower();
+                case TypeWeekStep.Second:
+                    return Global.Second.ToLower();
+                case TypeWeekStep.Third:
+                    return Global.Third.ToLower();
+                case TypeWeekStep.Fourth:
+                    return Global.Fourth.ToLower();
+                case TypeWeekStep.Last:
+                    return Global.Last.ToLower();
+            }
+
+            return string.Empty;
+        }
+
+        private string GetStepRecurringWeeklyDescription(Configuration TheConfiguration)
         {
             string TheStepStr;
             String DaysString = "";
 
-            for (int Index = 0; Index < this.weeklyVar.Length; Index++)
+            DayOfWeek[] TheDays = this.PrepareWeeklyVar(TheConfiguration);
+
+            for (int Index = 0; Index < TheDays.Length; Index++)
             {
-                if (Index != this.weeklyVar.Length - 2 && Index != this.weeklyVar.Length - 1)
-                    DaysString = DaysString + this.weeklyVar[Index].ToString().ToLower() + ", ";
-                else if (Index == this.weeklyVar.Length - 1)
-                    DaysString = DaysString + this.weeklyVar[Index].ToString().ToLower();
-                else if (Index == this.weeklyVar.Length - 2)
-                    DaysString = DaysString + this.weeklyVar[Index].ToString().ToLower() + " and ";
+                if (Index != TheDays.Length - 2 && Index != TheDays.Length - 1)
+                    DaysString = DaysString + Schedule.GetDayDescription(TheDays[Index]).ToLower() + ", ";
+                else if (Index == TheDays.Length - 1)
+                    DaysString = DaysString + Schedule.GetDayDescription(TheDays[Index]).ToLower();
+                else if (Index == TheDays.Length - 2)
+                    DaysString = DaysString + Schedule.GetDayDescription(TheDays[Index]).ToLower() + " " + Global.and + " ";
             }
 
-            if (this.configuration.WeekStep > 1)
+            if (TheConfiguration.WeekStep > 1)
             {
-                TheStepStr = Global.every + " " + this.configuration.WeekStep.ToString() + " " + Global.weeks +
-                    " " + Global.on + " " + DaysString;
+                TheStepStr = Global.every + " " + TheConfiguration.WeekStep.ToString() + " " + Global.weeks + " " + Global.on + " " + DaysString;
             }
             else
             {
@@ -288,129 +308,131 @@ namespace Schedule.Process
         }
 
         #region Once
-        private Output[] ExecuteOnce(string TheTypeStr)
+        private Output[] ExecuteOnce(string TheTypeStr, Configuration TheConfiguration)
         {
-            return new Output[]{ReturnOuput(TheTypeStr,
-                        this.configuration.DateStep.Value,
-                        this.configuration.DateStep.Value, this.configuration.DateFrom, null) };
+            return new Output[]{this.ReturnOuput(TheTypeStr,
+                        TheConfiguration.DateStep.Value,
+                        TheConfiguration.DateStep.Value, TheConfiguration.DateFrom, null) };
         }
         #endregion
 
         #region Recurring
 
-        private Output[] ExecuteRecurring(DateTime TheDate, string TheTypeStepStr)
+        private Output[] ExecuteRecurring(DateTime TheDate, string TheTypeStepStr, Configuration TheConfiguration)
         {
             List<Output> TheExistList = new List<Output>();
 
-            if (this.configuration.TypeRecurring == TypeTimeStep.Daily)
+            if (TheConfiguration.TypeRecurring == TypeTimeStep.Daily)
             {
-                this.ExecuteRecurringDaily(TheDate, TheTypeStepStr, TheExistList);
+                this.ExecuteRecurringDaily(TheDate, TheTypeStepStr, TheExistList, TheConfiguration);
             }
-            else if (this.configuration.TypeRecurring == TypeTimeStep.Weekly)
+            else if (TheConfiguration.TypeRecurring == TypeTimeStep.Weekly)
             {
-                this.ExecuteRecurringWeekly(TheDate, TheTypeStepStr, TheExistList);
+                this.ExecuteRecurringWeekly(TheDate, TheTypeStepStr, TheExistList, TheConfiguration);
             }
-            else if (this.configuration.TypeRecurring == TypeTimeStep.Monthly)
+            else if (TheConfiguration.TypeRecurring == TypeTimeStep.Monthly)
             {
-                this.ValidateMonthlyConfiguration();
+                this.ValidateMonthlyConfiguration(TheConfiguration);
 
-                this.ExecuteRecurringMonthly(TheDate, TheTypeStepStr, TheExistList);
+                this.ExecuteRecurringMonthly(TheDate, TheTypeStepStr, TheExistList, TheConfiguration);
             }
 
             return TheExistList.ToArray();
         }
 
-        private void ValidateMonthlyConfiguration()
+        private void ValidateMonthlyConfiguration(Configuration TheConfiguration)
         {
-            if (this.configuration.MonthlyOnce == null && this.configuration.MonthlyMore == null)
+            if (TheConfiguration.MonthlyOnce == null && TheConfiguration.MonthlyMore == null)
             {
                 throw new ScheduleException(Global.ValidateMonthlyConfiguration);
             }
-            if (this.configuration.MonthlyOnceMonthSteps <= 0)
+            if (TheConfiguration.MonthlyOnceMonthSteps <= 0)
             {
                 throw new ScheduleException(Global.ValidateMonthlyMonths);
             }
-            if (this.configuration.HourStep <= 0)
+            if (TheConfiguration.HourStep <= 0)
             {
                 throw new ScheduleException(Global.ValidateHourStepOfDailyFrequency);
             }
-            if (this.configuration.HourFrom > this.configuration.HourTo)
+            if (TheConfiguration.HourFrom > TheConfiguration.HourTo)
             {
                 throw new ScheduleException(Global.ValidateHourFromBigggerHourTo);
             }
         }
 
-        private void ExecuteRecurringMonthly(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList)
+        private void ExecuteRecurringMonthly(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList, Configuration TheConfiguration)
         {
-            DateTime TheDateTo = this.configuration.DateTo != null ? this.configuration.DateTo.Value : DateTime.MaxValue;
+            DateTime TheDateTo = TheConfiguration.DateTo != null ? TheConfiguration.DateTo.Value : DateTime.MaxValue;
 
-            if (this.configuration.MonthlyOnce == true)
+            if (TheConfiguration.MonthlyOnce == true)
             {
-                this.ExecuteRecurringMonthlyOnce(TheDate, TheTypeStepStr, TheExistList, TheDateTo);
+                this.ExecuteRecurringMonthlyOnce(TheDate, TheTypeStepStr, TheExistList, TheDateTo,
+                    TheConfiguration);
             }
             else
             {
-                this.ExecuteRecurringMonthlyMore(TheDate, TheTypeStepStr, TheExistList);
+                this.ExecuteRecurringMonthlyMore(TheDate, TheTypeStepStr, TheExistList, TheConfiguration);
             }
         }
 
-        private void ExecuteRecurringMonthlyMore(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList)
+        private void ExecuteRecurringMonthlyMore(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList, Configuration TheConfiguration)
         {
-            this.ValidateMonthlyMoreRecurring();
+            this.ValidateMonthlyMoreRecurring(TheConfiguration);
 
-            DateTime TheDateTo = this.configuration.DateTo != null ? this.configuration.DateTo.Value : DateTime.MaxValue;
+            DateTime TheDateTo = TheConfiguration.DateTo != null ? TheConfiguration.DateTo.Value : DateTime.MaxValue;
                         
             int IndexDayWeek = 1;
 
-            DateTime? TheDay = this.GetDayInMonth(TheDate, IndexDayWeek);
+            DateTime? TheDay = this.GetDayInMonth(TheDate, IndexDayWeek, TheConfiguration);
 
             TheDay = TheDay == null ? TheDate : TheDay; 
 
             for (DateTime EachWeekDate = TheDay.Value; EachWeekDate <= TheDateTo;
-                EachWeekDate = this.GetNexDate(EachWeekDate))
+                EachWeekDate = this.GetNexDate(EachWeekDate, TheConfiguration))
             {
                 TheExistList.AddRange(
-                    this.ExecuteRecurringMonthlyWeekHours(TheTypeStepStr, TheDateTo, EachWeekDate));
+                    this.ExecuteRecurringMonthlyWeekHours(TheTypeStepStr, TheDateTo, EachWeekDate,
+                    TheConfiguration));
             }
         }
 
-        private void ValidateMonthlyMoreRecurring()
+        private void ValidateMonthlyMoreRecurring(Configuration TheConfiguration)
         {
-            if (this.configuration.MonthlyMoreWeekStep == null)
+            if (TheConfiguration.MonthlyMoreWeekStep == null)
                 throw new ScheduleException(Global.ValidateMonthlyMoreWeekStep);
 
-            if (this.configuration.HourFrom == null || this.configuration.HourTo == null)
+            if (TheConfiguration.HourFrom == null || TheConfiguration.HourTo == null)
                 throw new ScheduleException(Global.ValidateMonthlyMoreHourFromTo);
         }
 
         private Output[] ExecuteRecurringMonthlyWeekHours(string TheTypeStepStr, DateTime TheDateTo, 
-            DateTime TheFirstDayWeek)
+            DateTime TheFirstDayWeek, Configuration TheConfiguration)
         {
             List<Output> TheList = new List<Output>();
 
-            DateTime TheWeekDay = this.GetWeekDay(TheFirstDayWeek);
+            DateTime TheWeekDay = this.GetWeekDay(TheFirstDayWeek, TheConfiguration);
 
             for (int IndexWeek = 1; IndexWeek <= 5; IndexWeek++)
             {
-                if (IndexWeek == Convert.ToInt32(this.configuration.MonthlyMoreWeekStep))
+                if (IndexWeek == Convert.ToInt32(TheConfiguration.MonthlyMoreWeekStep))
                 {
-                    if (this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Day ||
-                        this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Monday ||
-                        this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Tuesday ||
-                        this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Wednesday ||
-                        this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Thursday || this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Friday ||
-                        this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Saturday ||
-                        this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Sunday)
+                    if (TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Day ||
+                        TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Monday ||
+                        TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Tuesday ||
+                        TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Wednesday ||
+                        TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Thursday || TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Friday ||
+                        TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Saturday ||
+                        TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Sunday)
                     {
-                        TheList.AddRange(this.ExecuteRecurringMonthlyWeekHoursPerDay(TheTypeStepStr, TheDateTo, TheFirstDayWeek, TheWeekDay));
+                        TheList.AddRange(this.ExecuteRecurringMonthlyWeekHoursPerDay(TheTypeStepStr, TheDateTo, TheFirstDayWeek, TheWeekDay, TheConfiguration));
                     }
-                    else if (this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.WeekDay)
+                    else if (TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.WeekDay)
                     {
-                        TheList.AddRange(this.ExecuteRecurringMonthlyWeekHoursPerWeekDay(TheTypeStepStr, TheDateTo, TheFirstDayWeek, TheWeekDay));
+                        TheList.AddRange(this.ExecuteRecurringMonthlyWeekHoursPerWeekDay(TheTypeStepStr, TheDateTo, TheFirstDayWeek, TheWeekDay, TheConfiguration));
                     }
-                    else if (this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.WeekendDay)
+                    else if (TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.WeekendDay)
                     {
-                        TheList.AddRange(this.ExecuteRecurringMonthlyWeekHoursPerWeekendDay(TheTypeStepStr, TheDateTo, TheWeekDay));
+                        TheList.AddRange(this.ExecuteRecurringMonthlyWeekHoursPerWeekendDay(TheTypeStepStr, TheDateTo, TheWeekDay, TheConfiguration));
                     }
                     break;
                 }
@@ -419,16 +441,16 @@ namespace Schedule.Process
             return TheList.ToArray();
         }
 
-        private Output[] ExecuteRecurringMonthlyWeekHoursPerWeekendDay(string TheTypeStepStr, DateTime TheDateTo,  DateTime TheWeekDay)
+        private Output[] ExecuteRecurringMonthlyWeekHoursPerWeekendDay(string TheTypeStepStr, DateTime TheDateTo,  DateTime TheWeekDay, Configuration TheConfiguration)
         {
             List<Output> TheList = new List<Output>();
 
             DateTime TheDayfromWeek = this.GetWeekend(
                 new DateTime(TheWeekDay.Year, TheWeekDay.Month, 1));
 
-            if (this.configuration.DateFrom > TheDayfromWeek)
+            if (TheConfiguration.DateFrom > TheDayfromWeek)
             {
-                TheDayfromWeek = this.configuration.DateFrom.Value;
+                TheDayfromWeek = TheConfiguration.DateFrom.Value;
             }
 
             DateTime TheDayToWeek = this.GetEndWeek(TheWeekDay);
@@ -436,13 +458,13 @@ namespace Schedule.Process
             for (DateTime EachDay = TheDayfromWeek; EachDay <= TheDayToWeek;
                 EachDay = EachDay.AddDays(1))
             {
-                TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay));
+                TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay, TheConfiguration));
             }
 
             return TheList.ToArray();
         }
 
-        private Output[] ExecuteRecurringMonthlyWeekHoursPerWeekDay(string TheTypeStepStr, DateTime TheDateTo, DateTime TheFirstDayWeek, DateTime TheWeekDay)
+        private Output[] ExecuteRecurringMonthlyWeekHoursPerWeekDay(string TheTypeStepStr, DateTime TheDateTo, DateTime TheFirstDayWeek, DateTime TheWeekDay, Configuration TheConfiguration)
         {
             List<Output> TheList = new List<Output>();
 
@@ -452,13 +474,14 @@ namespace Schedule.Process
                     EachDay <= TheEndWeek; EachDay =
                     EachDay.AddDays(1))
             {
-                TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay));
+                TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay,
+                    TheConfiguration));
             }
 
             return TheList.ToArray();
         }
 
-        private Output[] ExecuteRecurringMonthlyWeekHoursPerDay(string TheTypeStepStr, DateTime TheDateTo, DateTime TheFirstDayWeek, DateTime TheWeekDay)
+        private Output[] ExecuteRecurringMonthlyWeekHoursPerDay(string TheTypeStepStr, DateTime TheDateTo, DateTime TheFirstDayWeek, DateTime TheWeekDay, Configuration TheConfiguration)
         {
             List<Output> TheList = new List<Output>();
 
@@ -466,52 +489,58 @@ namespace Schedule.Process
                    EachDay <= TheWeekDay.AddDays(6); EachDay =
                    EachDay.AddDays(1))
             {
-                if (this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Day &&
+                if (TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Day &&
                     EachDay.Date == TheFirstDayWeek.Date)
                 {
-                    TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay));
+                    TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay, TheConfiguration));
                     break;
                 }
-                else if (this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Monday &&
+                else if (TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Monday &&
                     EachDay.DayOfWeek == DayOfWeek.Monday)
                 {
-                    TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay));
+                    TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay,
+                        TheConfiguration));
                     break;
                 }
-                else if (this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Tuesday &&
+                else if (TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Tuesday &&
                     EachDay.DayOfWeek == DayOfWeek.Tuesday)
                 {
-                    TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay));
+                    TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay,
+                        TheConfiguration));
                     break;
                 }
-                else if (this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Wednesday &&
+                else if (TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Wednesday &&
                     EachDay.DayOfWeek == DayOfWeek.Wednesday)
                 {
-                    TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay));
+                    TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay,
+                        TheConfiguration));
                     break;
                 }
-                else if (this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Thursday &&
+                else if (TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Thursday &&
                     EachDay.DayOfWeek == DayOfWeek.Thursday)
                 {
-                    TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay));
+                    TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay, TheConfiguration));
                     break;
                 }
-                else if (this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Friday &&
+                else if (TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Friday &&
                     EachDay.DayOfWeek == DayOfWeek.Friday)
                 {
-                    TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay));
+                    TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay,
+                        TheConfiguration));
                     break;
                 }
-                else if (this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Saturday &&
+                else if (TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Saturday &&
                     EachDay.DayOfWeek == DayOfWeek.Saturday)
                 {
-                    TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay));
+                    TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay,
+                        TheConfiguration));
                     break;
                 }
-                else if (this.configuration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Sunday &&
+                else if (TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.Sunday &&
                     EachDay.DayOfWeek == DayOfWeek.Sunday)
                 {
-                    TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay));
+                    TheList.AddRange(this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDay,
+                        TheConfiguration));
                     break;
                 }
             }
@@ -519,9 +548,9 @@ namespace Schedule.Process
             return TheList.ToArray();
         }
 
-        private DateTime GetWeekDay(DateTime TheFirstDayWeek)
+        private DateTime GetWeekDay(DateTime TheFirstDayWeek, Configuration TheConfiguration)
         {
-            switch (this.configuration.MonthlyMoreWeekStep)
+            switch (TheConfiguration.MonthlyMoreWeekStep)
             {
                 case TypeWeekStep.First:
                     return TheFirstDayWeek;
@@ -588,14 +617,14 @@ namespace Schedule.Process
             return TheDay;
         }
 
-        private DateTime? GetDayInMonth(DateTime TheDay, int IndexDayWeek)
+        private DateTime? GetDayInMonth(DateTime TheDay, int IndexDayWeek, Configuration TheConfiguration)
         {
             DateTime TheFirstDay = new DateTime(TheDay.Year, TheDay.Month, 1);
             DateTime? TheAuxDay = null;
 
             for (int IndexWeek = 1; IndexWeek < 5; IndexWeek++)
             {
-                if (IndexWeek == Convert.ToInt32(this.configuration.MonthlyMoreWeekStep))
+                if (IndexWeek == Convert.ToInt32(TheConfiguration.MonthlyMoreWeekStep))
                 {
                     TheFirstDay = this.GetFirstDayWeek(TheFirstDay);
 
@@ -607,7 +636,7 @@ namespace Schedule.Process
                             continue;
                         }
 
-                        TheAuxDay = this.GetDayWeek(TheFirstDay);
+                        TheAuxDay = this.GetDayWeek(TheFirstDay, TheConfiguration);
 
                         if (TheAuxDay != null)
                         {
@@ -627,87 +656,89 @@ namespace Schedule.Process
                 TheFirstDay = this.GetFirstDayWeek(
                     TheFirstDay.AddDays(DateTime.DaysInMonth(TheFirstDay.Year, TheFirstDay.Month)));
 
-                TheAuxDay = this.GetDayWeek(TheFirstDay);
+                TheAuxDay = this.GetDayWeek(TheFirstDay, TheConfiguration);
             }
 
             return TheDay;
         }
 
-        private void ExecuteRecurringMonthlyOnce(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList, DateTime TheDateTo)
+        private void ExecuteRecurringMonthlyOnce(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList, DateTime TheDateTo, Configuration TheConfiguration)
         {
-            this.ValidateMonthlyOnceRecurring();
+            this.ValidateMonthlyOnceRecurring(TheConfiguration);
 
             DateTime TheNewDate;
-            if (TheDate.Day > this.configuration.MonthlyOnceDay)
+            if (TheDate.Day > TheConfiguration.MonthlyOnceDay)
             {
                 TheNewDate = new DateTime(TheDate.Year, TheDate.AddMonths(
-                    this.configuration.MonthlyOnceMonthSteps.Value).Month, this.configuration.MonthlyOnceDay.Value, TheDate.Hour, TheDate.Minute, TheDate.Second);
+                    TheConfiguration.MonthlyOnceMonthSteps.Value).Month, TheConfiguration.MonthlyOnceDay.Value, TheDate.Hour, TheDate.Minute, TheDate.Second);
             }
             else
             {
-                TheNewDate = new DateTime(TheDate.Year, TheDate.Month, this.configuration.MonthlyOnceDay.Value, TheDate.Hour, TheDate.Minute, TheDate.Second);
+                TheNewDate = new DateTime(TheDate.Year, TheDate.Month, TheConfiguration.MonthlyOnceDay.Value, TheDate.Hour, TheDate.Minute, TheDate.Second);
             }
 
             for (DateTime EachDate = TheNewDate; EachDate <= TheDateTo;
-                EachDate = this.GetNexDate(EachDate))
+                EachDate = this.GetNexDate(EachDate, TheConfiguration))
             {
-                if (this.configuration.MonthlyOnceDay.Value == EachDate.Day)
+                if (TheConfiguration.MonthlyOnceDay.Value == EachDate.Day)
                 {
                     TheExistList.AddRange(
-                        this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDate));
+                        this.ExecuteMonthlyWeeklyHours(TheTypeStepStr, TheDateTo, EachDate, TheConfiguration));
                 }
             }
         }
 
-        private void ValidateMonthlyOnceRecurring()
+        private void ValidateMonthlyOnceRecurring(Configuration TheConfiguration)
         {
-            if (this.configuration.MonthlyOnceDay <= 0)
+            if (TheConfiguration.MonthlyOnceDay <= 0)
                 throw new ScheduleException(Global.ValidateMonthlyOnceDayFrequency);
 
-            if (this.configuration.MonthlyOnceMonthSteps == null || this.configuration.MonthlyOnceMonthSteps <= 0)
+            if (TheConfiguration.MonthlyOnceMonthSteps == null || TheConfiguration.MonthlyOnceMonthSteps <= 0)
                 throw new ScheduleException(Global.ValidateMonthlyOnceMonthFrequency);
         }
 
-        private void ExecuteRecurringWeekly(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList)
+        private void ExecuteRecurringWeekly(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList, Configuration TheConfiguration)
         {
-            this.ValidateWeeklyRecurring();
+            this.ValidateWeeklyRecurring(TheConfiguration);
 
-            DateTime TheDateTo = this.configuration.DateTo != null ? this.configuration.DateTo.Value : DateTime.MaxValue;
-            int WeekStep = this.configuration.WeekStep > 0 ? this.configuration.WeekStep : 0;
+            DateTime TheDateTo = TheConfiguration.DateTo != null ? TheConfiguration.DateTo.Value : DateTime.MaxValue;
+            int WeekStep = TheConfiguration.WeekStep > 0 ? TheConfiguration.WeekStep : 0;
 
             for (DateTime EachWeekDate = TheDate; EachWeekDate <= TheDateTo;
-                EachWeekDate = this.GetNexDate(EachWeekDate))
+                EachWeekDate = this.GetNexDate(EachWeekDate, TheConfiguration))
             {
                 TheExistList.AddRange(
-                    this.ExecuteWeekly(TheTypeStepStr, TheDateTo, EachWeekDate));
+                    this.ExecuteWeekly(TheTypeStepStr, TheDateTo, EachWeekDate, TheConfiguration));
             }
         }
 
-        private void ValidateWeeklyRecurring()
+        private void ValidateWeeklyRecurring(Configuration TheConfiguration)
         {
-            if (this.configuration.WeekStep <= 0)
+            if (TheConfiguration.WeekStep <= 0)
                 throw new ScheduleException(Global.ValidateWeeklyStep);
         }
 
-        private void ExecuteRecurringDaily(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList)
+        private void ExecuteRecurringDaily(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList, Configuration TheConfiguration)
         {
-            for (DateTime EachDate = TheDate.AddDays(1); EachDate.Date <= this.configuration.DateTo; EachDate = EachDate.AddDays(this.configuration.DailyStep))
+            for (DateTime EachDate = TheDate.AddDays(1); EachDate.Date <= TheConfiguration.DateTo; EachDate = EachDate.AddDays(TheConfiguration.DailyStep))
             {
-                TheExistList.Add(this.ReturnOuput(TheTypeStepStr, EachDate, EachDate, this.configuration.DateFrom, this.configuration.DateStep.Value));
+                TheExistList.Add(this.ReturnOuput(TheTypeStepStr, EachDate, EachDate, TheConfiguration.DateFrom, TheConfiguration.DateStep.Value));
             }
         }
 
         private Output[] ExecuteWeekly(string TheTypeStr,
-           DateTime TheDateTo, DateTime EachDateWeek)
+           DateTime TheDateTo, DateTime EachDateWeek, Configuration TheConfiguration)
         {
             List<Output> TheExits = new List<Output>();
+
+            DayOfWeek[] TheDays = this.PrepareWeeklyVar(TheConfiguration);
 
             for (DateTime EachDate = EachDateWeek; EachDate <= TheDateTo;
                 EachDate = EachDate.AddDays(1))
             {
-                if (this.weeklyVar.Any(W => W.Equals(EachDate.DayOfWeek)))
+                if (TheDays.Any(W => W.Equals(EachDate.DayOfWeek)))
                 {
-                    TheExits.AddRange(this.ExecuteHours(TheTypeStr, EachDate));
+                    TheExits.AddRange(this.ExecuteHours(TheTypeStr, EachDate, TheConfiguration));
                 }
 
                 if (EachDate.DayOfWeek == DayOfWeek.Sunday)
@@ -739,9 +770,9 @@ namespace Schedule.Process
             return TheDate;
         }
 
-        private DateTime? GetDayWeek(DateTime TheFirstDayWeek)
+        private DateTime? GetDayWeek(DateTime TheFirstDayWeek, Configuration TheConfiguration)
         {
-            switch (this.configuration.MonthlyMoreOrderDayWeekStep)
+            switch (TheConfiguration.MonthlyMoreOrderDayWeekStep)
             {
                 case TypeDayWeekStep.Day:
                 case TypeDayWeekStep.Monday:
@@ -763,71 +794,71 @@ namespace Schedule.Process
             return null;
         }
 
-        private DateTime GetNexDate(DateTime TheDate)
+        private DateTime GetNexDate(DateTime TheDate, Configuration TheConfiguration)
         {
-            if (this.configuration.TypeRecurring == TypeTimeStep.Weekly)
+            if (TheConfiguration.TypeRecurring == TypeTimeStep.Weekly)
             {
-                if (this.configuration.WeekStep > 0)
+                if (TheConfiguration.WeekStep > 0)
                 {
                     switch (TheDate.DayOfWeek)
                     {
                         case DayOfWeek.Monday:
-                            TheDate = TheDate.AddDays(this.configuration.WeekStep * 7);
+                            TheDate = TheDate.AddDays(TheConfiguration.WeekStep * 7);
                             break;
                         case DayOfWeek.Tuesday:
-                            TheDate = TheDate.AddDays(-1 + this.configuration.WeekStep * 7);
+                            TheDate = TheDate.AddDays(-1 + TheConfiguration.WeekStep * 7);
                             break;
                         case DayOfWeek.Wednesday:
-                            TheDate = TheDate.AddDays(-2 + this.configuration.WeekStep * 7);
+                            TheDate = TheDate.AddDays(-2 + TheConfiguration.WeekStep * 7);
                             break;
                         case DayOfWeek.Thursday:
-                            TheDate = TheDate.AddDays(-3 + this.configuration.WeekStep * 7);
+                            TheDate = TheDate.AddDays(-3 + TheConfiguration.WeekStep * 7);
                             break;
                         case DayOfWeek.Friday:
-                            TheDate = TheDate.AddDays(-4 + this.configuration.WeekStep * 7);
+                            TheDate = TheDate.AddDays(-4 + TheConfiguration.WeekStep * 7);
                             break;
                         case DayOfWeek.Saturday:
-                            TheDate = TheDate.AddDays(-5 + this.configuration.WeekStep * 7);
+                            TheDate = TheDate.AddDays(-5 + TheConfiguration.WeekStep * 7);
                             break;
                         case DayOfWeek.Sunday:
-                            TheDate = TheDate.AddDays(-6 + this.configuration.WeekStep * 7);
+                            TheDate = TheDate.AddDays(-6 + TheConfiguration.WeekStep * 7);
                             break;
                         default:
                             break;
                     }
                 }
             }
-            else if (this.configuration.MonthlyOnce == true)
+            else if (TheConfiguration.MonthlyOnce == true)
             {
-                int CurrentDay = this.configuration.MonthlyOnceDay.Value;
+                int CurrentDay = TheConfiguration.MonthlyOnceDay.Value;
 
-                TheDate = TheDate.AddMonths(this.configuration.MonthlyOnceMonthSteps.Value);
+                TheDate = TheDate.AddMonths(TheConfiguration.MonthlyOnceMonthSteps.Value);
 
-                while (this.configuration.MonthlyOnceDay.Value == 31 && 
+                while (TheConfiguration.MonthlyOnceDay.Value == 31 && 
                     DateTime.DaysInMonth(TheDate.Year, TheDate.Month) != 31)
                 {
-                    TheDate = TheDate.AddMonths(this.configuration.MonthlyOnceMonthSteps.Value);
+                    TheDate = TheDate.AddMonths(TheConfiguration.MonthlyOnceMonthSteps.Value);
                 }
 
                 TheDate = new DateTime(TheDate.Year, TheDate.Month, CurrentDay);
             }
-            else if (this.configuration.MonthlyMore == true)
+            else if (TheConfiguration.MonthlyMore == true)
             {
-                TheDate = TheDate.AddMonths(this.configuration.MonthlyMoreMonthSteps.Value);
+                TheDate = TheDate.AddMonths(TheConfiguration.MonthlyMoreMonthSteps.Value);
             }
 
             return TheDate;
         }
 
-        private Output ReturnExitRecurringMonthtlyWeekly(string TheTypeStepStr, DateTime TheDateStep, DateTime? TheDateFrom, DateTime? TheDate)
+        private Output ReturnExitRecurringMonthtlyWeekly(string TheTypeStepStr, DateTime TheDateStep, DateTime? TheDateFrom, DateTime? TheDate, Configuration TheConfiguration)
         {
-            string HourDayStr = this.GetHourDayString();
+            string HourDayStr = this.GetHourDayString(TheConfiguration).ToLower();
 
             string TheHourStepStr = "";
 
-            if (this.configuration.HourStep.Value > 1)
+            if (TheConfiguration.HourStep.Value > 1)
             {
-                TheHourStepStr = Global.every + " " + this.configuration.HourStep.ToString() + " " + Global.hours;
+                TheHourStepStr = Global.every + " " + TheConfiguration.HourStep.ToString() + " " + Global.hours;
             }
             else
             {
@@ -840,93 +871,94 @@ namespace Schedule.Process
             }
 
             Output TheExit = new Output();
-            if (this.configuration.TypeRecurring == TypeTimeStep.Weekly)
+            if (TheConfiguration.TypeRecurring == TypeTimeStep.Weekly)
             {
                 TheExit.OutputDate = TheDateStep;
                 TheExit.Description =
                     string.Format(Global.ExitRecurring, TheTypeStepStr, TheHourStepStr, HourDayStr,
-                    TheDateFrom != null ? TheDateFrom.Value.ToShortDateString() : "");
+                    TheDateFrom != null ? TheDateFrom.Value.ToString("d", this.culture) : "");
             }
             else
             {
-                if (this.configuration.MonthlyOnce == true)
+                if (TheConfiguration.MonthlyOnce == true)
                 {
                     TheExit.OutputDate = TheDateStep;
                     TheExit.Description =
                         string.Format(Global.ExitRecurring, TheTypeStepStr, TheHourStepStr, HourDayStr,
-                        TheDateFrom != null ? TheDateFrom.Value.ToShortDateString() : "");
+                        TheDateFrom != null ? TheDateFrom.Value.ToString("d", this.culture) : "");
                 }
-                else if (this.configuration.MonthlyMore == true)
+                else if (TheConfiguration.MonthlyMore == true)
                 {
                     TheExit.OutputDate = TheDateStep;
                     TheExit.Description =
                         string.Format(Global.ExitRecurring, TheTypeStepStr, TheHourStepStr, HourDayStr,
-                        TheDateFrom != null ? TheDateFrom.Value.ToShortDateString() : "");
+                        TheDateFrom != null ? TheDateFrom.Value.ToString("d", this.culture) : "");
                 }
             }
 
             return TheExit;
         }
 
-        private string GetHourDayString()
+        private string GetHourDayString(Configuration TheConfiguration)
         {
-            return (this.configuration.HourFrom != null ? this.configuration.HourFrom.Value.ToShortTimeString() :
-                            new DateTime(1900, 1, 1, 0, 0, 0).ToShortTimeString()) + " am and " +
-                            (this.configuration.HourTo != null ? this.configuration.HourTo.Value.ToShortTimeString() :
-                            new DateTime(1900, 1, 1, 23, 59, 0).ToShortTimeString()) + " am";
+            return (TheConfiguration.HourFrom != null ? TheConfiguration.HourFrom.Value.ToString("t", this.culture) :
+                            new DateTime(1900, 1, 1, 0, 0, 0).ToString("t", this.culture)) + " " + Global.and + " " + 
+                            (TheConfiguration.HourTo != null ? TheConfiguration.HourTo.Value.ToString("t", this.culture) :
+                            new DateTime(1900, 1, 1, 23, 59, 0).ToString("t", this.culture));
         }
 
         private Output[] ExecuteMonthlyWeeklyHours(string TheTypeStepStr,
-            DateTime TheDateTo, DateTime EachDateMonthly)
+            DateTime TheDateTo, DateTime EachDateMonthly, Configuration TheConfiguration)
         {
             List<Output> TheExists = new List<Output>();
 
-            TheExists.AddRange(this.ExecuteHours(TheTypeStepStr, EachDateMonthly));
+            TheExists.AddRange(this.ExecuteHours(TheTypeStepStr, EachDateMonthly, TheConfiguration));
 
             return TheExists.ToArray();
         }
 
-        private Output[] ExecuteHours(string TheTypeStr, DateTime TheDate)
+        private Output[] ExecuteHours(string TheTypeStr, DateTime TheDate, Configuration TheConfiguration)
         {
             List<Output> TheList = new List<Output>();
 
-            DateTime TheHourFrom = ReturnHourFrom(TheDate);
+            DateTime TheHourFrom = this.ReturnHourFrom(TheDate, TheConfiguration);
 
-            DateTime TheHourTo = ReturnHourTo(TheDate);
+            DateTime TheHourTo = this.ReturnHourTo(TheDate, TheConfiguration);
 
-            int TheHourStep = this.configuration.HourStep != null ?
-                this.configuration.HourStep.Value : 1;
+            int TheHourStep = TheConfiguration.HourStep != null ?
+                TheConfiguration.HourStep.Value : 1;
 
             for (DateTime TheHour = TheHourFrom; TheHour <= TheHourTo;
                 TheHour = TheHour.AddHours(TheHourStep))
             {
-                TheList.Add(this.ReturnExitRecurringMonthtlyWeekly(TheTypeStr, TheDate, this.configuration.DateFrom, TheHour));
+                TheList.Add(this.ReturnExitRecurringMonthtlyWeekly(TheTypeStr, TheDate, 
+                    TheConfiguration.DateFrom, TheHour, TheConfiguration));
             }
 
             return TheList.ToArray();
         }
 
-        private DateTime ReturnHourTo(DateTime TheDate)
+        private DateTime ReturnHourTo(DateTime TheDate, Configuration TheConfiguration)
         {
             DateTime TheDateTo = new DateTime(TheDate.Year, TheDate.Month, TheDate.Day, 23, 59, 59);
 
-            if (this.configuration.HourTo != null)
+            if (TheConfiguration.HourTo != null)
             {
-                TheDateTo = new DateTime(TheDate.Year, TheDate.Month, TheDate.Day, this.configuration.HourTo.Value.Hour, this.configuration.HourTo.Value.Minute,
-                    this.configuration.HourTo.Value.Second);
+                TheDateTo = new DateTime(TheDate.Year, TheDate.Month, TheDate.Day, TheConfiguration.HourTo.Value.Hour, TheConfiguration.HourTo.Value.Minute,
+                    TheConfiguration.HourTo.Value.Second);
             }
 
             return TheDateTo;
         }
 
-        private DateTime ReturnHourFrom(DateTime TheDate)
+        private DateTime ReturnHourFrom(DateTime TheDate, Configuration TheConfiguration)
         {
             DateTime TheHourFrom = new DateTime(TheDate.Year, TheDate.Month, TheDate.Day, 0, 0, 0);
 
-            if (this.configuration.HourFrom != null)
+            if (TheConfiguration.HourFrom != null)
             {
-                TheHourFrom = new DateTime(TheDate.Year, TheDate.Month, TheDate.Day, this.configuration.HourFrom.Value.Hour, this.configuration.HourFrom.Value.Minute,
-                    this.configuration.HourFrom.Value.Second);
+                TheHourFrom = new DateTime(TheDate.Year, TheDate.Month, TheDate.Day, TheConfiguration.HourFrom.Value.Hour, TheConfiguration.HourFrom.Value.Minute,
+                    TheConfiguration.HourFrom.Value.Second);
             }
 
             return TheHourFrom;
