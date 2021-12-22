@@ -62,7 +62,7 @@ namespace Schedule.Test
                      Assert.Throws<ScheduleException>(() =>
                      this.process = new Process.Schedule(CurrentConfiguration));
 
-            Assert.Equal("Debe rellenar la configuración", caughtException.Message);
+            Assert.Equal("Need to fill the configuration", caughtException.Message);
         }
 
         [Fact]
@@ -122,6 +122,43 @@ namespace Schedule.Test
             Assert.Equal("Need to set the Date From and Step in configuration", caughtException.Message);
         }
 
+
+        [Theory]
+        [InlineData(Languages.en_GB)]
+        [InlineData(Languages.es_ES)]
+        [InlineData(Languages.en_US)]
+        public void Execute_once(Languages Language)
+        {
+            // Arrange
+            Configuration CurrentConfiguration = new Configuration();
+            CurrentConfiguration.Enabled = true;
+            CurrentConfiguration.TimeType = TypeStep.Once;
+            CurrentConfiguration.DateStep = new DateTime(2021,1,5);
+            CurrentConfiguration.DateFrom = new DateTime(2021, 1, 4);
+            CurrentConfiguration.DateTo = new DateTime(2021, 1, 5);
+            CurrentConfiguration.Language = Language;
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            //Act
+
+            Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value, CurrentConfiguration);
+
+            //Assert
+            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 5, 0, 0, 0));            
+            switch (CurrentConfiguration.Language)
+            {
+                case Languages.en_GB:
+                    Assert.True(TheOutput[0].Description == "Occurs once. Schedule will be used on 05/01/2021 starting on 04/01/2021 00:00");
+                    break;
+                case Languages.es_ES:
+                    Assert.True(TheOutput[0].Description == "Ocurre una vez. Schedule se usará en 05/01/2021 empezando en 04/01/2021 00:00");
+                    break;
+                case Languages.en_US:
+                    Assert.True(TheOutput[0].Description == "Occurs once. Schedule will be used on 1/5/2021 starting on 1/4/2021 00:00");
+                    break;
+            };
+        }
+
         [Fact]
         public void Execute_recurring_daily_should_set_frequency_when_occurs()
         {
@@ -140,7 +177,7 @@ namespace Schedule.Test
                   Assert.Throws<ScheduleException>(() => this.process.Execute(CurrentConfiguration.DateStep.Value, CurrentConfiguration));
 
             //Assert
-            Assert.Equal("Need to set when occurs recurring", caughtException.Message);
+            Assert.Equal("Need to set frequency", caughtException.Message);
         }
 
         [Fact]
@@ -303,7 +340,7 @@ namespace Schedule.Test
                    Assert.Throws<ScheduleException>(() => this.process.Execute(CurrentConfiguration.DateStep.Value, CurrentConfiguration));
 
             //Assert
-            Assert.Equal("Week step must be bigger than 0", caughtException.Message);
+            Assert.Equal("Need to set week step bigger than 0", caughtException.Message);
         }
 
         [Theory]
@@ -1938,7 +1975,7 @@ namespace Schedule.Test
                     Assert.True(TheOutput[0].Description == "Occurs the first weekday of every 3 months every 2 hours between 08:00 and 12:00 starting on 01/01/2020");
                     break;
                 case Languages.es_ES:
-                    Assert.True(TheOutput[0].Description == "Ocurre el primer dia de la semana de cada 3 meses cada 2 horas entre 8:00 y 12:00 empezando en 01/01/2020");
+                    Assert.True(TheOutput[0].Description == "Ocurre el primer dia laboral de cada 3 meses cada 2 horas entre 8:00 y 12:00 empezando en 01/01/2020");
                     break;
                 case Languages.en_US:
                     Assert.True(TheOutput[0].Description == "Occurs the first weekday of every 3 months every 2 hours between 8:00 am and 12:00 pm starting on 1/1/2020");
