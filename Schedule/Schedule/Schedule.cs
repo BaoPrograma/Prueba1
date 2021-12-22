@@ -1,5 +1,4 @@
 ﻿using Schedule.Config;
-using Schedule.RecursosTextos;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -25,7 +24,8 @@ namespace Schedule.Process
         private void ValidateConfiguration(Configuration TheConfiguration)
         {
             if (TheConfiguration == null)
-                throw new ScheduleException(Global.ValidateConfiguration);
+                throw new ScheduleException(
+                    this.GetTranslation(new Configuration(), "ValidateConfiguration"));
         }
 
         private DayOfWeek[] PrepareWeeklyVar(Configuration TheConfiguration)
@@ -63,7 +63,7 @@ namespace Schedule.Process
             }
             else
             {
-                return new Output[] {ReturnOuput("",
+                return new Output[] {ReturnOuput(TheConfiguration, "",
                    TheDate, TheDate, TheConfiguration.DateFrom, null)};
             }
         }
@@ -72,28 +72,36 @@ namespace Schedule.Process
         {
             if (TheConfiguration.DateStep == null)
             {
-                throw new ScheduleException(Global.ValidateDateConfiguration);
+                throw new ScheduleException(
+                    this.GetTranslation(TheConfiguration, "ValidateDateConfiguration"));
             }
             if (TheConfiguration.DateFrom == null)
             {
-                throw new ScheduleException(Global.ValidateDateConfiguration);
+                throw new ScheduleException(
+                    this.GetTranslation(TheConfiguration, "ValidateDateConfiguration"));
             }
         }
 
-        private Output ReturnOuput(string TheWeeStepStr, DateTime TheDateStep, DateTime TheHourStep, DateTime? TheDateFrom, DateTime? TheHour)
+        private Output ReturnOuput(Configuration TheConfiguration,
+            string TheWeeStepStr, DateTime TheDateStep, DateTime TheHourStep, DateTime? TheDateFrom, DateTime? TheHour)
         {
             string TheDateStepStr = TheDateStep.ToString("d", this.culture);
 
             if (TheHourStep.TimeOfDay > new TimeSpan(00, 00, 00))
             {
-                TheDateStepStr += " " + Global.at + " " + TheHourStep.ToShortTimeString();
+                TheDateStepStr += " " +
+                    this.GetTranslation(TheConfiguration, "at")
+                    + " " + TheHourStep.ToShortTimeString();
             }
 
             Output TheExit = new Output();
             TheExit.OutputDate = TheDateStep;
             TheExit.Description =
-                string.Format(Global.Output, TheWeeStepStr, TheDateStepStr) +
-                (TheDateFrom != null ? " " + string.Format(Global.StartingOn
+                string.Format(
+                this.GetTranslation(TheConfiguration, "Output"),
+                TheWeeStepStr, TheDateStepStr) +
+                (TheDateFrom != null ? " " + string.Format(
+                    this.GetTranslation(TheConfiguration, "StartingOn")
                 , TheDateFrom.Value.ToString("d", this.culture)) : "") +
                 " " + (TheHour != null ? TheHour.Value.ToShortTimeString() : "00:00");
 
@@ -117,19 +125,24 @@ namespace Schedule.Process
         private void ValidateRecurringConfiguration(Configuration TheConfiguration)
         {
             if (TheConfiguration.HourStep < 0)
-                throw new ScheduleException(Global.ValidateHourStep);
+                throw new ScheduleException(
+                    this.GetTranslation(TheConfiguration, "ValidateHourStep"));
 
             if (TheConfiguration.TypeRecurring == null)
-                throw new ScheduleException(Global.ValidateRecurringFrequency);
+                throw new ScheduleException(
+                    this.GetTranslation(TheConfiguration, "ValidateRecurringFrequency")); 
 
             if (TheConfiguration.MonthlyOnce == true && TheConfiguration.MonthlyOnceMonthSteps == null)
-                throw new ScheduleException(Global.ValidateMonthlyConfiguration);
+                throw new ScheduleException(
+                    this.GetTranslation(TheConfiguration, "ValidateMonthlyConfiguration")); 
 
             if (TheConfiguration.MonthlyMore == true && TheConfiguration.MonthlyMoreMonthSteps == null)
-                throw new ScheduleException(Global.ValidateMonthlyConfiguration);
+                throw new ScheduleException(
+                    this.GetTranslation(TheConfiguration, "ValidateMonthlyConfiguration")); 
 
             if (TheConfiguration.MonthlyMore == true && TheConfiguration.MonthlyMoreOrderDayWeekStep == null)
-                throw new ScheduleException(Global.ValidateMonthlyMoreWeekStep);
+                throw new ScheduleException(
+                    this.GetTranslation(TheConfiguration, "ValidateMonthlyMoreWeekStep")); 
         }
 
         private string GetStepDescription(Configuration TheConfiguration)
@@ -137,7 +150,7 @@ namespace Schedule.Process
             string TheStepStr = "";
             if (TheConfiguration.TimeType == TypeStep.Once)
             {
-                TheStepStr = Global.once;
+                TheStepStr = this.GetTranslation(TheConfiguration, "once");
             }
             else
             {
@@ -149,11 +162,35 @@ namespace Schedule.Process
             return TheStepStr;
         }
 
+        private string GetTranslation(Configuration TheConfiguration, string Id)
+        {
+            string Text = "";
+            if (TheConfiguration != null)
+            {
+                switch (TheConfiguration.Language)
+                {
+                    case Languages.en_GB:
+                        Text = English.Translations[Id].ToString();
+                        break;
+                    case Languages.es_ES:
+                        Text = Spanish.Translations[Id].ToString();
+                        break;
+                    case Languages.en_US:
+                        Text = EnglishUS.Translations[Id].ToString();
+                        break;
+                }
+            }
+
+            return Text;
+        }
+
         private string GetStepRecurringDescription(string TheStepStr, Configuration TheConfiguration)
         {
             if (TheConfiguration.TypeRecurring == TypeTimeStep.Daily)
             {
-                TheStepStr = Global.every + " " + (TheConfiguration.DailyStep == 1 ? "" + Global.day : TheConfiguration.DailyStep.ToString() + " " + Global.days);
+                TheStepStr = this.GetTranslation(TheConfiguration, "every")
+                     + " " + (TheConfiguration.DailyStep == 1 ? "" + this.GetTranslation(TheConfiguration, "day") : TheConfiguration.DailyStep.ToString() + " " +
+                     this.GetTranslation(TheConfiguration, "days"));
             }
             else if (TheConfiguration.TypeRecurring == TypeTimeStep.Weekly)
             {
@@ -167,39 +204,46 @@ namespace Schedule.Process
                 {
                     if (TheConfiguration.MonthlyOnceMonthSteps > 1)
                     {
-                        MonthStr = TheConfiguration.MonthlyOnceMonthSteps.Value.ToString() + " " + Global.months;
+                        MonthStr = TheConfiguration.MonthlyOnceMonthSteps.Value.ToString() + " " +
+                            this.GetTranslation(TheConfiguration, "months");
                     }
                     else
                     {
-                        MonthStr = Global.month;
+                        MonthStr = this.GetTranslation(TheConfiguration, "month");
                     }
 
-                    TheStepStr = Global.day + " " + TheConfiguration.MonthlyOnceDay.Value.ToString() +
-                        " " + Global.of + " " + Global.every + " " + MonthStr;
+                    TheStepStr = this.GetTranslation(TheConfiguration, "day") + " " + TheConfiguration.MonthlyOnceDay.Value.ToString() +
+                        " " + this.GetTranslation(TheConfiguration, "of") + " " +
+                        this.GetTranslation(TheConfiguration, "every") + " " + MonthStr;
                 }
                 else if (TheConfiguration.MonthlyMore == true)
                 {
                     if (TheConfiguration.MonthlyMoreMonthSteps > 1)
                     {
-                        MonthStr = TheConfiguration.MonthlyMoreMonthSteps.Value.ToString() + " " + Global.months;
+                        MonthStr = TheConfiguration.MonthlyMoreMonthSteps.Value.ToString() + " " +
+                            this.GetTranslation(TheConfiguration, "months");
                     }
                     else
                     {
-                        MonthStr = Global.month;
+                        MonthStr = this.GetTranslation(TheConfiguration, "month");
                     }
 
 
                     if (TheConfiguration.MonthlyMoreOrderDayWeekStep == TypeDayWeekStep.WeekendDay)
                     {
-                        TheStepStr = Global.the + " " + this.GetMonthlyOrderString(TheConfiguration) + " " +
-                            Schedule.GetDayStepDescription(
-                               TheConfiguration.MonthlyMoreOrderDayWeekStep.Value) + " " + Global.of + " " + Global.every + " " + MonthStr;
+                        TheStepStr = this.GetTranslation(TheConfiguration, "the") + " " + this.GetMonthlyOrderString(TheConfiguration) + " " +
+                            this.GetDayStepDescription(TheConfiguration,
+                               TheConfiguration.MonthlyMoreOrderDayWeekStep.Value) + " " +
+                               this.GetTranslation(TheConfiguration, "of") +
+                               " " + this.GetTranslation(TheConfiguration, "every") + " " + MonthStr;
                     }
                     else
                     {
-                        TheStepStr = Global.the + " " + this.GetMonthlyOrderString(TheConfiguration) + " " +
-                           Schedule.GetDayStepDescription(
-                               TheConfiguration.MonthlyMoreOrderDayWeekStep.Value).ToLower() + " " + Global.of + " " + Global.every + " " + MonthStr;
+                        TheStepStr = this.GetTranslation(TheConfiguration, "the")  
+                            + " " + this.GetMonthlyOrderString(TheConfiguration) + " " +
+                           this.GetDayStepDescription(TheConfiguration, 
+                               TheConfiguration.MonthlyMoreOrderDayWeekStep.Value).ToLower() + " " + this.GetTranslation(TheConfiguration, "of") + " " +
+                               this.GetTranslation(TheConfiguration, "every") + " " + MonthStr;
                     }
                 }
             }
@@ -207,53 +251,53 @@ namespace Schedule.Process
             return TheStepStr;
         }
 
-        private static string GetDayStepDescription(TypeDayWeekStep Step)
+        private string GetDayStepDescription(Configuration TheConfiguration, TypeDayWeekStep Step)
         {
             switch (Step)
             {
                 case TypeDayWeekStep.Monday:
-                    return Global.Monday;
+                    return this.GetTranslation(TheConfiguration, "Monday");
                 case TypeDayWeekStep.Tuesday:
-                    return Global.Tuesday;
+                    return this.GetTranslation(TheConfiguration, "Tuesday");
                 case TypeDayWeekStep.Wednesday:
-                    return Global.Wednesday;
+                    return this.GetTranslation(TheConfiguration, "Wednesday");
                 case TypeDayWeekStep.Thursday:
-                    return Global.Thursday;
+                    return this.GetTranslation(TheConfiguration, "Thursday");
                 case TypeDayWeekStep.Friday:
-                    return Global.Friday;
+                    return this.GetTranslation(TheConfiguration, "Friday");
                 case TypeDayWeekStep.Saturday:
-                    return Global.Saturday;
+                    return this.GetTranslation(TheConfiguration, "Saturday");
                 case TypeDayWeekStep.Sunday:
-                    return Global.Sunday;
+                    return this.GetTranslation(TheConfiguration, "Sunday");
                 case TypeDayWeekStep.Day:
-                    return Global.day;
+                    return this.GetTranslation(TheConfiguration, "day");
                 case TypeDayWeekStep.WeekDay:
-                    return Global.WeekDay;
+                    return this.GetTranslation(TheConfiguration, "weekday");
                 case TypeDayWeekStep.WeekendDay:
-                    return Global.weekend;
+                    return this.GetTranslation(TheConfiguration, "weekend");
             }
 
             return string.Empty;
         }
 
-        private static string GetDayDescription(DayOfWeek Day)
+        private string GetDayDescription(Configuration TheConfiguration, DayOfWeek Day)
         {
             switch(Day)
             {
                 case DayOfWeek.Monday:
-                    return Global.Monday;
+                    return this.GetTranslation(TheConfiguration, "Monday");
                 case DayOfWeek.Tuesday:
-                    return Global.Tuesday;
+                    return this.GetTranslation(TheConfiguration, "Tuesday");
                 case DayOfWeek.Wednesday:
-                    return Global.Wednesday;
+                    return this.GetTranslation(TheConfiguration, "Wednesday");
                 case DayOfWeek.Thursday:
-                    return Global.Thursday;
+                    return this.GetTranslation(TheConfiguration, "Thursday");
                 case DayOfWeek.Friday:
-                    return Global.Friday;
+                    return this.GetTranslation(TheConfiguration, "Friday");
                 case DayOfWeek.Saturday:
-                    return Global.Saturday;
+                    return this.GetTranslation(TheConfiguration, "Saturday");
                 case DayOfWeek.Sunday:
-                    return Global.Sunday;
+                    return this.GetTranslation(TheConfiguration, "Sunday");
             }
 
             return string.Empty;
@@ -264,15 +308,15 @@ namespace Schedule.Process
             switch(TheConfiguration.MonthlyMoreWeekStep)
             {
                 case TypeWeekStep.First:
-                    return Global.First.ToLower();
+                    return this.GetTranslation(TheConfiguration, "First").ToLower();
                 case TypeWeekStep.Second:
-                    return Global.Second.ToLower();
+                    return this.GetTranslation(TheConfiguration, "Second").ToLower();
                 case TypeWeekStep.Third:
-                    return Global.Third.ToLower();
+                    return this.GetTranslation(TheConfiguration, "Third").ToLower();
                 case TypeWeekStep.Fourth:
-                    return Global.Fourth.ToLower();
+                    return this.GetTranslation(TheConfiguration, "Fourth").ToLower();
                 case TypeWeekStep.Last:
-                    return Global.Last.ToLower();
+                    return this.GetTranslation(TheConfiguration, "Last").ToLower();
             }
 
             return string.Empty;
@@ -288,20 +332,25 @@ namespace Schedule.Process
             for (int Index = 0; Index < TheDays.Length; Index++)
             {
                 if (Index != TheDays.Length - 2 && Index != TheDays.Length - 1)
-                    DaysString = DaysString + Schedule.GetDayDescription(TheDays[Index]).ToLower() + ", ";
+                    DaysString = DaysString + this.GetDayDescription(TheConfiguration,TheDays[Index]).ToLower() + ", ";
                 else if (Index == TheDays.Length - 1)
-                    DaysString = DaysString + Schedule.GetDayDescription(TheDays[Index]).ToLower();
+                    DaysString = DaysString + this.GetDayDescription(TheConfiguration, TheDays[Index]).ToLower();
                 else if (Index == TheDays.Length - 2)
-                    DaysString = DaysString + Schedule.GetDayDescription(TheDays[Index]).ToLower() + " " + Global.and + " ";
+                    DaysString = DaysString + this.GetDayDescription(TheConfiguration, TheDays[Index]).ToLower() + " " + 
+                        this.GetTranslation(TheConfiguration, "and") + " ";
             }
 
             if (TheConfiguration.WeekStep > 1)
             {
-                TheStepStr = Global.every + " " + TheConfiguration.WeekStep.ToString() + " " + Global.weeks + " " + Global.on + " " + DaysString;
+                TheStepStr = this.GetTranslation(TheConfiguration, "every") + " " + TheConfiguration.WeekStep.ToString() + " " + 
+                    this.GetTranslation(TheConfiguration, "weeks") + " " +
+                    this.GetTranslation(TheConfiguration, "on") + " " + DaysString;
             }
             else
             {
-                TheStepStr = Global.every + " " + Global.week + " " + Global.on + " " + DaysString;
+                TheStepStr = this.GetTranslation(TheConfiguration, "every")
+                    + " " + this.GetTranslation(TheConfiguration, "week") + " " +
+                    this.GetTranslation(TheConfiguration, "on") + " " + DaysString;
             }
 
             return TheStepStr;
@@ -310,7 +359,7 @@ namespace Schedule.Process
         #region Once
         private Output[] ExecuteOnce(string TheTypeStr, Configuration TheConfiguration)
         {
-            return new Output[]{this.ReturnOuput(TheTypeStr,
+            return new Output[]{this.ReturnOuput(TheConfiguration, TheTypeStr,
                         TheConfiguration.DateStep.Value,
                         TheConfiguration.DateStep.Value, TheConfiguration.DateFrom, null) };
         }
@@ -344,19 +393,23 @@ namespace Schedule.Process
         {
             if (TheConfiguration.MonthlyOnce == null && TheConfiguration.MonthlyMore == null)
             {
-                throw new ScheduleException(Global.ValidateMonthlyConfiguration);
+                throw new ScheduleException(
+                    this.GetTranslation(TheConfiguration, "ValidateMonthlyConfiguration"));
             }
             if (TheConfiguration.MonthlyOnceMonthSteps <= 0)
             {
-                throw new ScheduleException(Global.ValidateMonthlyMonths);
+                throw new ScheduleException(
+                    this.GetTranslation(TheConfiguration, "ValidateMonthlyMonths"));
             }
             if (TheConfiguration.HourStep <= 0)
             {
-                throw new ScheduleException(Global.ValidateHourStepOfDailyFrequency);
+                throw new ScheduleException(
+                    this.GetTranslation(TheConfiguration, "ValidateHourStepOfDailyFrequency")); 
             }
             if (TheConfiguration.HourFrom > TheConfiguration.HourTo)
             {
-                throw new ScheduleException(Global.ValidateHourFromBigggerHourTo);
+                throw new ScheduleException(
+                    this.GetTranslation(TheConfiguration, "ValidateHourFromBigggerHourTo")); 
             }
         }
 
@@ -399,10 +452,12 @@ namespace Schedule.Process
         private void ValidateMonthlyMoreRecurring(Configuration TheConfiguration)
         {
             if (TheConfiguration.MonthlyMoreWeekStep == null)
-                throw new ScheduleException(Global.ValidateMonthlyMoreWeekStep);
+                throw new ScheduleException(
+                    this.GetTranslation(TheConfiguration, "ValidateMonthlyMoreWeekStep"));
 
             if (TheConfiguration.HourFrom == null || TheConfiguration.HourTo == null)
-                throw new ScheduleException(Global.ValidateMonthlyMoreHourFromTo);
+                throw new ScheduleException(
+                    this.GetTranslation(TheConfiguration, "ValidateMonthlyMoreHourFromTo"));
         }
 
         private Output[] ExecuteRecurringMonthlyWeekHours(string TheTypeStepStr, DateTime TheDateTo, 
@@ -691,10 +746,12 @@ namespace Schedule.Process
         private void ValidateMonthlyOnceRecurring(Configuration TheConfiguration)
         {
             if (TheConfiguration.MonthlyOnceDay <= 0)
-                throw new ScheduleException(Global.ValidateMonthlyOnceDayFrequency);
+                throw new ScheduleException(
+                    this.GetTranslation(TheConfiguration, "ValidateMonthlyOnceDayFrequency"));
 
             if (TheConfiguration.MonthlyOnceMonthSteps == null || TheConfiguration.MonthlyOnceMonthSteps <= 0)
-                throw new ScheduleException(Global.ValidateMonthlyOnceMonthFrequency);
+                throw new ScheduleException(
+                    this.GetTranslation(TheConfiguration, "ValidateMonthlyOnceMonthFrequency"));
         }
 
         private void ExecuteRecurringWeekly(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList, Configuration TheConfiguration)
@@ -715,14 +772,15 @@ namespace Schedule.Process
         private void ValidateWeeklyRecurring(Configuration TheConfiguration)
         {
             if (TheConfiguration.WeekStep <= 0)
-                throw new ScheduleException(Global.ValidateWeeklyStep);
+                throw new ScheduleException(
+                    this.GetTranslation(TheConfiguration, "ValidateWeeklyStep"));
         }
 
         private void ExecuteRecurringDaily(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList, Configuration TheConfiguration)
         {
             for (DateTime EachDate = TheDate.AddDays(1); EachDate.Date <= TheConfiguration.DateTo; EachDate = EachDate.AddDays(TheConfiguration.DailyStep))
             {
-                TheExistList.Add(this.ReturnOuput(TheTypeStepStr, EachDate, EachDate, TheConfiguration.DateFrom, TheConfiguration.DateStep.Value));
+                TheExistList.Add(this.ReturnOuput(TheConfiguration, TheTypeStepStr, EachDate, EachDate, TheConfiguration.DateFrom, TheConfiguration.DateStep.Value));
             }
         }
 
@@ -858,11 +916,15 @@ namespace Schedule.Process
 
             if (TheConfiguration.HourStep.Value > 1)
             {
-                TheHourStepStr = Global.every + " " + TheConfiguration.HourStep.ToString() + " " + Global.hours;
+                TheHourStepStr = 
+                    this.GetTranslation(TheConfiguration, "every") + " " + 
+                    TheConfiguration.HourStep.ToString() + " " +
+                    this.GetTranslation(TheConfiguration, "hours");
             }
             else
             {
-                TheHourStepStr = Global.every + " " + Global.hour;
+                TheHourStepStr = this.GetTranslation(TheConfiguration, "every")
+                    + " " + this.GetTranslation(TheConfiguration, "hour");
             }
 
             if (TheDate != null)
@@ -875,7 +937,9 @@ namespace Schedule.Process
             {
                 TheExit.OutputDate = TheDateStep;
                 TheExit.Description =
-                    string.Format(Global.ExitRecurring, TheTypeStepStr, TheHourStepStr, HourDayStr,
+                    string.Format(
+                    this.GetTranslation(TheConfiguration, "ExitRecurring"),
+                    TheTypeStepStr, TheHourStepStr, HourDayStr,
                     TheDateFrom != null ? TheDateFrom.Value.ToString("d", this.culture) : "");
             }
             else
@@ -884,14 +948,17 @@ namespace Schedule.Process
                 {
                     TheExit.OutputDate = TheDateStep;
                     TheExit.Description =
-                        string.Format(Global.ExitRecurring, TheTypeStepStr, TheHourStepStr, HourDayStr,
+                        string.Format(
+                        this.GetTranslation(TheConfiguration, "ExitRecurring"), 
+                        TheTypeStepStr, TheHourStepStr, HourDayStr,
                         TheDateFrom != null ? TheDateFrom.Value.ToString("d", this.culture) : "");
                 }
                 else if (TheConfiguration.MonthlyMore == true)
                 {
                     TheExit.OutputDate = TheDateStep;
                     TheExit.Description =
-                        string.Format(Global.ExitRecurring, TheTypeStepStr, TheHourStepStr, HourDayStr,
+                        string.Format(
+                        this.GetTranslation(TheConfiguration, "ExitRecurring"), TheTypeStepStr, TheHourStepStr, HourDayStr,
                         TheDateFrom != null ? TheDateFrom.Value.ToString("d", this.culture) : "");
                 }
             }
@@ -902,7 +969,8 @@ namespace Schedule.Process
         private string GetHourDayString(Configuration TheConfiguration)
         {
             return (TheConfiguration.HourFrom != null ? TheConfiguration.HourFrom.Value.ToString("t", this.culture) :
-                            new DateTime(1900, 1, 1, 0, 0, 0).ToString("t", this.culture)) + " " + Global.and + " " + 
+                            new DateTime(1900, 1, 1, 0, 0, 0).ToString("t", this.culture)) + " " + 
+                            this.GetTranslation(TheConfiguration, "and") + " " +
                             (TheConfiguration.HourTo != null ? TheConfiguration.HourTo.Value.ToString("t", this.culture) :
                             new DateTime(1900, 1, 1, 23, 59, 0).ToString("t", this.culture));
         }
