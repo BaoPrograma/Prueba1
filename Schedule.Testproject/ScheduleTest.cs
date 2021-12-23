@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Xunit;
 using Schedule.Process;
 using Schedule.Config;
-using Schedule.RecursosTextos;
 
 namespace Schedule.Test
 {
@@ -133,7 +132,7 @@ namespace Schedule.Test
             Configuration CurrentConfiguration = new Configuration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Once;
-            CurrentConfiguration.DateStep = new DateTime(2021,1,5);
+            CurrentConfiguration.DateStep = new DateTime(2021,1, 4);
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 4);
             CurrentConfiguration.DateTo = new DateTime(2021, 1, 5);
             CurrentConfiguration.Language = Language;
@@ -144,17 +143,17 @@ namespace Schedule.Test
             Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value, CurrentConfiguration);
 
             //Assert
-            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 5, 0, 0, 0));            
+            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 4, 0, 0, 0));            
             switch (CurrentConfiguration.Language)
             {
                 case Languages.en_GB:
-                    Assert.True(TheOutput[0].Description == "Occurs once. Schedule will be used on 05/01/2021 starting on 04/01/2021 00:00");
+                    Assert.True(TheOutput[0].Description == "Occurs once. Schedule will be used on 04/01/2021 starting on 04/01/2021 00:00");
                     break;
                 case Languages.es_ES:
-                    Assert.True(TheOutput[0].Description == "Ocurre una vez. Schedule se usará en 05/01/2021 empezando en 04/01/2021 00:00");
+                    Assert.True(TheOutput[0].Description == "Ocurre una vez. Schedule se usará en 04/01/2021 empezando en 04/01/2021 00:00");
                     break;
                 case Languages.en_US:
-                    Assert.True(TheOutput[0].Description == "Occurs once. Schedule will be used on 1/5/2021 starting on 1/4/2021 00:00");
+                    Assert.True(TheOutput[0].Description == "Occurs once. Schedule will be used on 1/4/2021 starting on 1/4/2021 00:00");
                     break;
             };
         }
@@ -371,9 +370,6 @@ namespace Schedule.Test
 
             //Act
             Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value, CurrentConfiguration);
-
-            string TheOutputDescruipction = string.Format(Global.ExitRecurring, Global.every + " " + Global.week + " " + Global.on + " " + Global.Monday, Global.every + " " + CurrentConfiguration.HourStep.ToString() + " " + Global.hours, CurrentConfiguration.HourFrom.Value.ToShortTimeString() + " and " +
-                  CurrentConfiguration.HourTo.Value.ToShortTimeString(), CurrentConfiguration.DateFrom.Value.ToShortDateString());
 
             //Assert
             Assert.True(TheOutput.Length == 2);
