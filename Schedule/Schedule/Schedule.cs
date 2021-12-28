@@ -10,9 +10,11 @@ namespace Schedule.Process
     public class Schedule
     {
         private CultureInfo culture;
-
+        private readonly Translation translation;
         public Schedule(Configuration TheConfiguration)
         {
+            this.translation = new Translation();
+
             this.ValidateConfiguration(TheConfiguration);
 
             this.culture = CultureInfo.GetCultureInfo(
@@ -170,13 +172,13 @@ namespace Schedule.Process
                 switch (TheConfiguration.Language)
                 {
                     case Languages.en_GB:
-                        Text = English.Translations[Id].ToString();
+                        Text = this.translation.GetTranslation(Id, Languages.en_GB);
                         break;
                     case Languages.es_ES:
-                        Text = Spanish.Translations[Id].ToString();
+                        Text = this.translation.GetTranslation(Id, Languages.es_ES);
                         break;
                     case Languages.en_US:
-                        Text = EnglishUS.Translations[Id].ToString();
+                        Text = this.translation.GetTranslation(Id, Languages.en_US);
                         break;
                 }
             }
