@@ -1,4 +1,5 @@
-﻿using Schedule.Config;
+﻿using Microsoft.EntityFrameworkCore;
+using ScheduleModel;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -11,7 +12,9 @@ namespace Schedule.Process
     {
         private CultureInfo culture;
         private readonly Translation translation;
-        public Schedule(Configuration TheConfiguration)
+        private ScheduleContext scheduleContext;
+
+        public Schedule(ScheduleConfiguration TheConfiguration)
         {
             this.translation = new Translation();
 
@@ -21,16 +24,76 @@ namespace Schedule.Process
                 TheConfiguration.Language.ToString());
 
             Thread.CurrentThread.CurrentUICulture = this.culture;
+
+            var options = new DbContextOptionsBuilder<ScheduleContext>()
+               .UseInMemoryDatabase(databaseName: "Test")
+               .Options;
+
+            this.scheduleContext = new ScheduleContext(options);
+
+            this.scheduleContext.Add(TheConfiguration);
+            this.scheduleContext.SaveChanges();
         }
 
-        private void ValidateConfiguration(Configuration TheConfiguration)
+        public ScheduleContext Context
+        {
+            get
+            {
+                return this.scheduleContext;
+            }
+        }
+
+        public void AddConfiguration(ScheduleConfiguration CurrentConfiguration)
+        {
+            this.scheduleContext.Configuration.Add(CurrentConfiguration);
+            this.scheduleContext.SaveChanges();
+        }
+
+        public ScheduleConfiguration GetConfiguration(int Id)
+        {
+            var Config = this.scheduleContext.Configuration.FirstOrDefault(b => b.SchedulerId == Id);
+
+            return Config;
+        }
+
+        public void UpdateConfiguration(ScheduleConfiguration CurrentConfiguration)
+        {
+            this.scheduleContext.Configuration.Add(CurrentConfiguration);
+            this.scheduleContext.SaveChanges();
+        }
+
+        public void RemoveConfiguration(ScheduleConfiguration CurrentConfiguration)
+        {
+            this.scheduleContext.Remove(CurrentConfiguration);
+            this.scheduleContext.SaveChanges();
+        }
+
+        public void RemoveConfigurationById(int Id)
+        {
+            this.scheduleContext.Configuration.Where(
+                C => C.SchedulerId == Id).ToList().ForEach(C =>
+                this.scheduleContext.Remove(C));
+
+            this.scheduleContext.SaveChanges();
+        }
+
+        public void RemovePastConfigurations()
+        {
+            this.scheduleContext.Configuration.Where(
+                C => C.DateStep <= DateTime.Today).ToList().ForEach(C =>
+                this.scheduleContext.Remove(C));
+
+            this.scheduleContext.SaveChanges();
+        }
+
+        private void ValidateConfiguration(ScheduleConfiguration TheConfiguration)
         {
             if (TheConfiguration == null)
                 throw new ScheduleException(
-                    this.GetTranslation(new Configuration(), "ValidateConfiguration"));
+                    this.GetTranslation(new ScheduleConfiguration(), "ValidateConfiguration"));
         }
 
-        private DayOfWeek[] PrepareWeeklyVar(Configuration TheConfiguration)
+        private DayOfWeek[] PrepareWeeklyVar(ScheduleConfiguration TheConfiguration)
         {
             List<DayOfWeek> WeekList = new List<DayOfWeek>();
 
@@ -52,7 +115,7 @@ namespace Schedule.Process
             return WeekList.ToArray();
         }
 
-        public Output[] Execute(DateTime TheDate, Configuration TheConfiguration)
+        public Output[] Execute(DateTime TheDate, ScheduleConfiguration TheConfiguration)
         {
             if (TheConfiguration.Enabled)
             {
@@ -70,7 +133,7 @@ namespace Schedule.Process
             }
         }
 
-        private void ValidateDatesConfiguration(Configuration TheConfiguration)
+        private void ValidateDatesConfiguration(ScheduleConfiguration TheConfiguration)
         {
             if (TheConfiguration.DateStep == null)
             {
@@ -84,7 +147,7 @@ namespace Schedule.Process
             }
         }
 
-        private Output ReturnOuput(Configuration TheConfiguration,
+        private Output ReturnOuput(ScheduleConfiguration TheConfiguration,
             string TheWeeStepStr, DateTime TheDateStep, DateTime TheHourStep, DateTime? TheDateFrom, DateTime? TheHour)
         {
             string TheDateStepStr = TheDateStep.ToString("d", this.culture);
@@ -110,7 +173,7 @@ namespace Schedule.Process
             return TheExit;
         }
 
-        private Output[] ExecuteDateStep(DateTime TheDate, Configuration TheConfiguration)
+        private Output[] ExecuteDateStep(DateTime TheDate, ScheduleConfiguration TheConfiguration)
         {
             string TheStepStr = this.GetStepDescription(TheConfiguration);
 
@@ -124,7 +187,7 @@ namespace Schedule.Process
             }
         }
 
-        private void ValidateRecurringConfiguration(Configuration TheConfiguration)
+        private void ValidateRecurringConfiguration(ScheduleConfiguration TheConfiguration)
         {
             if (TheConfiguration.HourStep < 0)
                 throw new ScheduleException(
@@ -147,7 +210,7 @@ namespace Schedule.Process
                     this.GetTranslation(TheConfiguration, "ValidateMonthlyMoreWeekStep")); 
         }
 
-        private string GetStepDescription(Configuration TheConfiguration)
+        private string GetStepDescription(ScheduleConfiguration TheConfiguration)
         {
             string TheStepStr = "";
             if (TheConfiguration.TimeType == TypeStep.Once)
@@ -164,7 +227,7 @@ namespace Schedule.Process
             return TheStepStr;
         }
 
-        private string GetTranslation(Configuration TheConfiguration, string Id)
+        private string GetTranslation(ScheduleConfiguration TheConfiguration, string Id)
         {
             string Text = "";
             if (TheConfiguration != null)
@@ -186,7 +249,7 @@ namespace Schedule.Process
             return Text;
         }
 
-        private string GetStepRecurringDescription(string TheStepStr, Configuration TheConfiguration)
+        private string GetStepRecurringDescription(string TheStepStr, ScheduleConfiguration TheConfiguration)
         {
             if (TheConfiguration.TypeRecurring == TypeTimeStep.Daily)
             {
@@ -253,7 +316,7 @@ namespace Schedule.Process
             return TheStepStr;
         }
 
-        private string GetDayStepDescription(Configuration TheConfiguration, TypeDayWeekStep Step)
+        private string GetDayStepDescription(ScheduleConfiguration TheConfiguration, TypeDayWeekStep Step)
         {
             switch (Step)
             {
@@ -282,7 +345,7 @@ namespace Schedule.Process
             return string.Empty;
         }
 
-        private string GetDayDescription(Configuration TheConfiguration, DayOfWeek Day)
+        private string GetDayDescription(ScheduleConfiguration TheConfiguration, DayOfWeek Day)
         {
             switch(Day)
             {
@@ -305,7 +368,7 @@ namespace Schedule.Process
             return string.Empty;
         }
 
-        private string GetMonthlyOrderString(Configuration TheConfiguration)
+        private string GetMonthlyOrderString(ScheduleConfiguration TheConfiguration)
         {
             switch(TheConfiguration.MonthlyMoreWeekStep)
             {
@@ -324,7 +387,7 @@ namespace Schedule.Process
             return string.Empty;
         }
 
-        private string GetStepRecurringWeeklyDescription(Configuration TheConfiguration)
+        private string GetStepRecurringWeeklyDescription(ScheduleConfiguration TheConfiguration)
         {
             string TheStepStr;
             String DaysString = "";
@@ -359,7 +422,7 @@ namespace Schedule.Process
         }
 
         #region Once
-        private Output[] ExecuteOnce(string TheTypeStr, Configuration TheConfiguration)
+        private Output[] ExecuteOnce(string TheTypeStr, ScheduleConfiguration TheConfiguration)
         {
             return new Output[]{this.ReturnOuput(TheConfiguration, TheTypeStr,
                         TheConfiguration.DateStep.Value,
@@ -369,7 +432,7 @@ namespace Schedule.Process
 
         #region Recurring
 
-        private Output[] ExecuteRecurring(DateTime TheDate, string TheTypeStepStr, Configuration TheConfiguration)
+        private Output[] ExecuteRecurring(DateTime TheDate, string TheTypeStepStr, ScheduleConfiguration TheConfiguration)
         {
             List<Output> TheExistList = new List<Output>();
 
@@ -391,7 +454,7 @@ namespace Schedule.Process
             return TheExistList.ToArray();
         }
 
-        private void ValidateMonthlyConfiguration(Configuration TheConfiguration)
+        private void ValidateMonthlyConfiguration(ScheduleConfiguration TheConfiguration)
         {
             if (TheConfiguration.MonthlyOnce == null && TheConfiguration.MonthlyMore == null)
             {
@@ -415,7 +478,7 @@ namespace Schedule.Process
             }
         }
 
-        private void ExecuteRecurringMonthly(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList, Configuration TheConfiguration)
+        private void ExecuteRecurringMonthly(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList, ScheduleConfiguration TheConfiguration)
         {
             DateTime TheDateTo = TheConfiguration.DateTo != null ? TheConfiguration.DateTo.Value : DateTime.MaxValue;
 
@@ -430,7 +493,7 @@ namespace Schedule.Process
             }
         }
 
-        private void ExecuteRecurringMonthlyMore(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList, Configuration TheConfiguration)
+        private void ExecuteRecurringMonthlyMore(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList, ScheduleConfiguration TheConfiguration)
         {
             this.ValidateMonthlyMoreRecurring(TheConfiguration);
 
@@ -451,7 +514,7 @@ namespace Schedule.Process
             }
         }
 
-        private void ValidateMonthlyMoreRecurring(Configuration TheConfiguration)
+        private void ValidateMonthlyMoreRecurring(ScheduleConfiguration TheConfiguration)
         {
             if (TheConfiguration.MonthlyMoreWeekStep == null)
                 throw new ScheduleException(
@@ -463,7 +526,7 @@ namespace Schedule.Process
         }
 
         private Output[] ExecuteRecurringMonthlyWeekHours(string TheTypeStepStr, DateTime TheDateTo, 
-            DateTime TheFirstDayWeek, Configuration TheConfiguration)
+            DateTime TheFirstDayWeek, ScheduleConfiguration TheConfiguration)
         {
             List<Output> TheList = new List<Output>();
 
@@ -498,7 +561,7 @@ namespace Schedule.Process
             return TheList.ToArray();
         }
 
-        private Output[] ExecuteRecurringMonthlyWeekHoursPerWeekendDay(string TheTypeStepStr, DateTime TheDateTo,  DateTime TheWeekDay, Configuration TheConfiguration)
+        private Output[] ExecuteRecurringMonthlyWeekHoursPerWeekendDay(string TheTypeStepStr, DateTime TheDateTo,  DateTime TheWeekDay, ScheduleConfiguration TheConfiguration)
         {
             List<Output> TheList = new List<Output>();
 
@@ -521,7 +584,7 @@ namespace Schedule.Process
             return TheList.ToArray();
         }
 
-        private Output[] ExecuteRecurringMonthlyWeekHoursPerWeekDay(string TheTypeStepStr, DateTime TheDateTo, DateTime TheFirstDayWeek, DateTime TheWeekDay, Configuration TheConfiguration)
+        private Output[] ExecuteRecurringMonthlyWeekHoursPerWeekDay(string TheTypeStepStr, DateTime TheDateTo, DateTime TheFirstDayWeek, DateTime TheWeekDay, ScheduleConfiguration TheConfiguration)
         {
             List<Output> TheList = new List<Output>();
 
@@ -538,7 +601,7 @@ namespace Schedule.Process
             return TheList.ToArray();
         }
 
-        private Output[] ExecuteRecurringMonthlyWeekHoursPerDay(string TheTypeStepStr, DateTime TheDateTo, DateTime TheFirstDayWeek, DateTime TheWeekDay, Configuration TheConfiguration)
+        private Output[] ExecuteRecurringMonthlyWeekHoursPerDay(string TheTypeStepStr, DateTime TheDateTo, DateTime TheFirstDayWeek, DateTime TheWeekDay, ScheduleConfiguration TheConfiguration)
         {
             List<Output> TheList = new List<Output>();
 
@@ -605,7 +668,7 @@ namespace Schedule.Process
             return TheList.ToArray();
         }
 
-        private DateTime GetWeekDay(DateTime TheFirstDayWeek, Configuration TheConfiguration)
+        private DateTime GetWeekDay(DateTime TheFirstDayWeek, ScheduleConfiguration TheConfiguration)
         {
             switch (TheConfiguration.MonthlyMoreWeekStep)
             {
@@ -674,7 +737,7 @@ namespace Schedule.Process
             return TheDay;
         }
 
-        private DateTime? GetDayInMonth(DateTime TheDay, int IndexDayWeek, Configuration TheConfiguration)
+        private DateTime? GetDayInMonth(DateTime TheDay, int IndexDayWeek, ScheduleConfiguration TheConfiguration)
         {
             DateTime TheFirstDay = new DateTime(TheDay.Year, TheDay.Month, 1);
             DateTime? TheAuxDay = null;
@@ -719,7 +782,7 @@ namespace Schedule.Process
             return TheDay;
         }
 
-        private void ExecuteRecurringMonthlyOnce(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList, DateTime TheDateTo, Configuration TheConfiguration)
+        private void ExecuteRecurringMonthlyOnce(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList, DateTime TheDateTo, ScheduleConfiguration TheConfiguration)
         {
             this.ValidateMonthlyOnceRecurring(TheConfiguration);
 
@@ -745,7 +808,7 @@ namespace Schedule.Process
             }
         }
 
-        private void ValidateMonthlyOnceRecurring(Configuration TheConfiguration)
+        private void ValidateMonthlyOnceRecurring(ScheduleConfiguration TheConfiguration)
         {
             if (TheConfiguration.MonthlyOnceDay <= 0)
                 throw new ScheduleException(
@@ -756,7 +819,7 @@ namespace Schedule.Process
                     this.GetTranslation(TheConfiguration, "ValidateMonthlyOnceMonthFrequency"));
         }
 
-        private void ExecuteRecurringWeekly(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList, Configuration TheConfiguration)
+        private void ExecuteRecurringWeekly(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList, ScheduleConfiguration TheConfiguration)
         {
             this.ValidateWeeklyRecurring(TheConfiguration);
 
@@ -771,14 +834,14 @@ namespace Schedule.Process
             }
         }
 
-        private void ValidateWeeklyRecurring(Configuration TheConfiguration)
+        private void ValidateWeeklyRecurring(ScheduleConfiguration TheConfiguration)
         {
             if (TheConfiguration.WeekStep <= 0)
                 throw new ScheduleException(
                     this.GetTranslation(TheConfiguration, "ValidateWeeklyStep"));
         }
 
-        private void ExecuteRecurringDaily(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList, Configuration TheConfiguration)
+        private void ExecuteRecurringDaily(DateTime TheDate, string TheTypeStepStr, List<Output> TheExistList, ScheduleConfiguration TheConfiguration)
         {
             for (DateTime EachDate = TheDate.AddDays(1); EachDate.Date <= TheConfiguration.DateTo; EachDate = EachDate.AddDays(TheConfiguration.DailyStep))
             {
@@ -787,7 +850,7 @@ namespace Schedule.Process
         }
 
         private Output[] ExecuteWeekly(string TheTypeStr,
-           DateTime TheDateTo, DateTime EachDateWeek, Configuration TheConfiguration)
+           DateTime TheDateTo, DateTime EachDateWeek, ScheduleConfiguration TheConfiguration)
         {
             List<Output> TheExits = new List<Output>();
 
@@ -830,7 +893,7 @@ namespace Schedule.Process
             return TheDate;
         }
 
-        private DateTime? GetDayWeek(DateTime TheFirstDayWeek, Configuration TheConfiguration)
+        private DateTime? GetDayWeek(DateTime TheFirstDayWeek, ScheduleConfiguration TheConfiguration)
         {
             switch (TheConfiguration.MonthlyMoreOrderDayWeekStep)
             {
@@ -854,7 +917,7 @@ namespace Schedule.Process
             return null;
         }
 
-        private DateTime GetNexDate(DateTime TheDate, Configuration TheConfiguration)
+        private DateTime GetNexDate(DateTime TheDate, ScheduleConfiguration TheConfiguration)
         {
             if (TheConfiguration.TypeRecurring == TypeTimeStep.Weekly)
             {
@@ -910,7 +973,7 @@ namespace Schedule.Process
             return TheDate;
         }
 
-        private Output ReturnExitRecurringMonthtlyWeekly(string TheTypeStepStr, DateTime TheDateStep, DateTime? TheDateFrom, DateTime? TheDate, Configuration TheConfiguration)
+        private Output ReturnExitRecurringMonthtlyWeekly(string TheTypeStepStr, DateTime TheDateStep, DateTime? TheDateFrom, DateTime? TheDate, ScheduleConfiguration TheConfiguration)
         {
             string HourDayStr = this.GetHourDayString(TheConfiguration).ToLower();
 
@@ -968,7 +1031,7 @@ namespace Schedule.Process
             return TheExit;
         }
 
-        private string GetHourDayString(Configuration TheConfiguration)
+        private string GetHourDayString(ScheduleConfiguration TheConfiguration)
         {
             return (TheConfiguration.HourFrom != null ? TheConfiguration.HourFrom.Value.ToString("t", this.culture) :
                             new DateTime(1900, 1, 1, 0, 0, 0).ToString("t", this.culture)) + " " + 
@@ -978,7 +1041,7 @@ namespace Schedule.Process
         }
 
         private Output[] ExecuteMonthlyWeeklyHours(string TheTypeStepStr,
-            DateTime TheDateTo, DateTime EachDateMonthly, Configuration TheConfiguration)
+            DateTime TheDateTo, DateTime EachDateMonthly, ScheduleConfiguration TheConfiguration)
         {
             List<Output> TheExists = new List<Output>();
 
@@ -987,7 +1050,7 @@ namespace Schedule.Process
             return TheExists.ToArray();
         }
 
-        private Output[] ExecuteHours(string TheTypeStr, DateTime TheDate, Configuration TheConfiguration)
+        private Output[] ExecuteHours(string TheTypeStr, DateTime TheDate, ScheduleConfiguration TheConfiguration)
         {
             List<Output> TheList = new List<Output>();
 
@@ -1008,7 +1071,7 @@ namespace Schedule.Process
             return TheList.ToArray();
         }
 
-        private DateTime ReturnHourTo(DateTime TheDate, Configuration TheConfiguration)
+        private DateTime ReturnHourTo(DateTime TheDate, ScheduleConfiguration TheConfiguration)
         {
             DateTime TheDateTo = new DateTime(TheDate.Year, TheDate.Month, TheDate.Day, 23, 59, 59);
 
@@ -1021,7 +1084,7 @@ namespace Schedule.Process
             return TheDateTo;
         }
 
-        private DateTime ReturnHourFrom(DateTime TheDate, Configuration TheConfiguration)
+        private DateTime ReturnHourFrom(DateTime TheDate, ScheduleConfiguration TheConfiguration)
         {
             DateTime TheHourFrom = new DateTime(TheDate.Year, TheDate.Month, TheDate.Day, 0, 0, 0);
 
