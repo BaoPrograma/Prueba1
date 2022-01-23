@@ -5,7 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 using Schedule.Process;
-using Schedule.Config;
+using Microsoft.EntityFrameworkCore;
+using ScheduleModel;
 
 namespace Schedule.Test
 {
@@ -18,10 +19,80 @@ namespace Schedule.Test
         }
 
         [Fact]
+        public void Can_Add_Configuration()
+        {
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration
+            {
+                Enabled = true,
+                DateFrom = new DateTime(2021, 1, 1),
+                TimeType = TypeStep.Recurring,
+                DateStep = new DateTime(2021, 8, 1).AddHours(14),
+                HourStep = 1
+            };
+            this.process = new Process.Schedule(CurrentConfiguration);
+
+            Assert.True(this.process.Context.Configuration.Count() > 0);
+            this.process.RemoveConfiguration(CurrentConfiguration);
+        }
+
+
+        [Fact]
+        public void Can_Remove_Configuration()
+        {
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration
+            {
+                Enabled = true,
+                DateFrom = new DateTime(2021, 1, 1),
+                TimeType = TypeStep.Recurring,
+                DateStep = new DateTime(2021, 8, 1).AddHours(14),
+                HourStep = 1
+            };
+            this.process = new Process.Schedule(CurrentConfiguration);
+            this.process.RemoveConfiguration(CurrentConfiguration);
+
+            Assert.True(this.process.Context.Configuration.Count() == 0);
+        }
+
+        [Fact]
+        public void Can_Remove_Configuration_By_Id()
+        {
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration
+            {
+                Enabled = true,
+                DateFrom = new DateTime(2021, 1, 1),
+                TimeType = TypeStep.Recurring,
+                DateStep = new DateTime(2021, 8, 1).AddHours(14),
+                HourStep = 1
+            };
+            this.process = new Process.Schedule(CurrentConfiguration);
+            this.process.RemoveConfigurationById(CurrentConfiguration.SchedulerId);
+
+            Assert.True(this.process.Context.Configuration.Count() == 0);
+        }
+
+        [Fact]
+        public void Can_Remove_Past_Configurations()
+        {
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration
+            {
+                Enabled = true,
+                DateFrom = new DateTime(2022, 1, 1),
+                TimeType = TypeStep.Recurring,
+                DateStep = new DateTime(2022, 1, 2).AddHours(14),
+                HourStep = 1
+            };
+            this.process = new Process.Schedule(CurrentConfiguration);
+            
+            this.process.RemovePastConfigurations();
+
+            Assert.True(this.process.Context.Configuration.Count() == 0);
+        }
+
+        [Fact]
         public void Execute_without_configuration_enabled_sholud_return_date()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = false;
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
             CurrentConfiguration.DateStep = new DateTime(2021, 8, 1).AddHours(14);
@@ -32,13 +103,14 @@ namespace Schedule.Test
             //Assert
             Assert.True(TheOutput.Length == 1);
             Assert.Equal(TheOutput[0].OutputDate, CurrentConfiguration.DateStep.Value);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_should_fill_date_from()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = new DateTime(2021, 8, 1).AddHours(14);
             this.process = new Process.Schedule(CurrentConfiguration);
@@ -49,13 +121,14 @@ namespace Schedule.Test
 
             //Assert
             Assert.Equal("Need to set the Date From and Step in configuration", caughtException.Message);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_should_fill_configuration()
         {
             // Arrange
-            Configuration CurrentConfiguration = null;
+            ScheduleConfiguration CurrentConfiguration = null;
 
             var caughtException =
                      Assert.Throws<ScheduleException>(() =>
@@ -68,7 +141,7 @@ namespace Schedule.Test
         public void Execute_once_daily_should_exit_date_step()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
             CurrentConfiguration.TimeType = TypeStep.Once;
@@ -81,13 +154,14 @@ namespace Schedule.Test
 
             //Assert
             Assert.Equal(CurrentConfiguration.DateStep, TheOutput[0].OutputDate);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_once_daily_should_fill_date_from()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Once;
             CurrentConfiguration.DateTo = new DateTime(2021, 1, 8);
@@ -100,13 +174,14 @@ namespace Schedule.Test
 
             //Assert
             Assert.Equal("Need to set the Date From and Step in configuration", caughtException.Message);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_once_daily_should_fill_date_step()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Once;
             CurrentConfiguration.DateStep = null;
@@ -119,6 +194,7 @@ namespace Schedule.Test
 
             //Assert
             Assert.Equal("Need to set the Date From and Step in configuration", caughtException.Message);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
 
@@ -129,21 +205,21 @@ namespace Schedule.Test
         public void Execute_once(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Once;
-            CurrentConfiguration.DateStep = new DateTime(2021,1, 4);
+            CurrentConfiguration.DateStep = new DateTime(2021, 1, 4);
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 4);
             CurrentConfiguration.DateTo = new DateTime(2021, 1, 5);
             CurrentConfiguration.Language = Language;
+
             this.process = new Process.Schedule(CurrentConfiguration);
 
             //Act
 
             Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value, CurrentConfiguration);
 
-            //Assert
-            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 4, 0, 0, 0));            
+            Assert.True(TheOutput[0].OutputDate.Value == new DateTime(2021, 1, 4, 0, 0, 0));
             switch (CurrentConfiguration.Language)
             {
                 case Languages.en_GB:
@@ -156,13 +232,15 @@ namespace Schedule.Test
                     Assert.True(TheOutput[0].Description == "Occurs once. Schedule will be used on 1/4/2021 starting on 1/4/2021 00:00");
                     break;
             };
+
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_daily_should_set_frequency_when_occurs()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
             CurrentConfiguration.TimeType = TypeStep.Recurring;
@@ -177,13 +255,14 @@ namespace Schedule.Test
 
             //Assert
             Assert.Equal("Need to set frequency", caughtException.Message);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_daily_HourStep_should_be_higher_than_0()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Daily;
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
@@ -206,7 +285,7 @@ namespace Schedule.Test
         public void Execute_recurring_daily_each_day(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Daily;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
@@ -262,6 +341,7 @@ namespace Schedule.Test
                     Assert.True(TheOutput[2].Description == "Occurs every day. Schedule will be used on 1/4/2021 at 14:00 starting on 1/1/2021 14:00");
                     break;
             };
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -271,7 +351,7 @@ namespace Schedule.Test
         public void Execute_recurring_daily_more_one_day(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Daily;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
@@ -314,13 +394,14 @@ namespace Schedule.Test
                     Assert.True(TheOutput[1].Description == "Occurs every 2 days. Schedule will be used on 1/4/2021 at 14:00 starting on 1/1/2021 14:00");
                     break;
             };
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_WeeklyStep_should_be_bigger_than_0()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Weekly;
             CurrentConfiguration.DateStep = new DateTime(2020, 1, 4);
@@ -340,6 +421,8 @@ namespace Schedule.Test
 
             //Assert
             Assert.Equal("Need to set week step bigger than 0", caughtException.Message);
+
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -352,7 +435,7 @@ namespace Schedule.Test
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Monday });
 
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
@@ -387,6 +470,7 @@ namespace Schedule.Test
                     break;
             }
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 11, 8, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -399,7 +483,7 @@ namespace Schedule.Test
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Monday });
 
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
@@ -434,6 +518,7 @@ namespace Schedule.Test
                     break;
             }
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 11, 8, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -452,7 +537,7 @@ namespace Schedule.Test
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday });
 
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
@@ -499,6 +584,7 @@ namespace Schedule.Test
             Assert.True(TheOutput[3].OutputDate.Value == new DateTime(2021, 1, 2, HourFrom, 0, 0));
             Assert.True(TheOutput[4].OutputDate.Value == new DateTime(2021, 1, 2, HourFrom + 2, 0, 0));
             Assert.True(TheOutput[5].OutputDate.Value == new DateTime(2021, 1, 2, HourFrom + 2 + 2, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -508,7 +594,7 @@ namespace Schedule.Test
         public void Execute_recurring_Weekly_monday_day(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
@@ -544,6 +630,7 @@ namespace Schedule.Test
             }
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 11, 10, 0, 0));
             Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 11, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -553,7 +640,7 @@ namespace Schedule.Test
         public void Execute_recurring_Weekly_tuesday_day(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
@@ -589,6 +676,7 @@ namespace Schedule.Test
             }
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 12, 10, 0, 0));
             Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 12, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -598,7 +686,7 @@ namespace Schedule.Test
         public void Execute_recurring_Weekly_wednesday_day(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
@@ -634,6 +722,7 @@ namespace Schedule.Test
             }
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 13, 10, 0, 0));
             Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 13, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -643,7 +732,7 @@ namespace Schedule.Test
         public void Execute_recurring_Weekly_thursday_day(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
@@ -679,6 +768,7 @@ namespace Schedule.Test
             }
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 14, 10, 0, 0));
             Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 14, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -688,7 +778,7 @@ namespace Schedule.Test
         public void Execute_recurring_Weekly_friday_day(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
@@ -724,6 +814,7 @@ namespace Schedule.Test
             }
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 1, 10, 0, 0));
             Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 1, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -733,7 +824,7 @@ namespace Schedule.Test
         public void Execute_recurring_Weekly_saturday_day(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
@@ -769,6 +860,7 @@ namespace Schedule.Test
             }
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 2, 10, 0, 0));
             Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 2, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -778,7 +870,7 @@ namespace Schedule.Test
         public void Execute_recurring_Weekly_sunday_day(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = new DateTime(2021, 1, 1);
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 1);
@@ -814,6 +906,7 @@ namespace Schedule.Test
             }
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 3, 10, 0, 0));
             Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 3, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -826,7 +919,7 @@ namespace Schedule.Test
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Saturday });
 
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = new DateTime(2021, 1, 2);
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 2);
@@ -862,6 +955,7 @@ namespace Schedule.Test
             }
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 16, 8, 0, 0));
             Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 30, 8, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -874,7 +968,7 @@ namespace Schedule.Test
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Sunday });
 
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = new DateTime(2021, 1, 3);
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 3);
@@ -910,6 +1004,7 @@ namespace Schedule.Test
             }
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 17, 8, 0, 0));
             Assert.True(TheOutput[2].OutputDate.Value == new DateTime(2021, 1, 31, 8, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -922,7 +1017,7 @@ namespace Schedule.Test
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Thursday });
 
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = new DateTime(2021, 1, 7);
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 7);
@@ -957,6 +1052,7 @@ namespace Schedule.Test
                     break;
             }
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 21, 8, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -969,7 +1065,7 @@ namespace Schedule.Test
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Wednesday });
 
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = new DateTime(2021, 1, 6);
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 6);
@@ -1004,6 +1100,7 @@ namespace Schedule.Test
                     break;
             }
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 20, 8, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -1016,7 +1113,7 @@ namespace Schedule.Test
             TheWeek.AddRange(new DayOfWeek[] { DayOfWeek.Tuesday });
 
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = new DateTime(2021, 1, 5);
             CurrentConfiguration.DateFrom = new DateTime(2021, 1, 5);
@@ -1051,12 +1148,13 @@ namespace Schedule.Test
                     break;
             }
             Assert.True(TheOutput[1].OutputDate.Value == new DateTime(2021, 1, 19, 8, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Recurring_MonthlyMore_WeekStep_monthlyWeekVar_should_not_be_null()
         {
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -1077,13 +1175,14 @@ namespace Schedule.Test
 
             //Assert
             Assert.True(CurrentConfiguration.MonthlyMoreMonthSteps != null);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_once_should_set_monthly_configuration()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
             CurrentConfiguration.MonthlyOnceDay = 8;
@@ -1104,13 +1203,14 @@ namespace Schedule.Test
 
             //Assert
             Assert.Equal("Need to set one of the checks in Monthly Configuration (day, the ..)", caughtException.Message);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_once_should_set_month_step_bigger_than_0()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
             CurrentConfiguration.MonthlyOnce = true;
@@ -1132,13 +1232,14 @@ namespace Schedule.Test
 
             //Assert
             Assert.Equal("Need to set month(s) bigger than 0", caughtException.Message);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_once_should_set_day_bigger_than_0_in_day_configuration()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
             CurrentConfiguration.MonthlyOnce = true;
@@ -1160,13 +1261,14 @@ namespace Schedule.Test
 
             //Assert
             Assert.Equal("Day must be bigger than 0", caughtException.Message);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_once_should_set_month_bigger_than_0_in_day_configuration()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
             CurrentConfiguration.MonthlyOnce = true;
@@ -1188,13 +1290,14 @@ namespace Schedule.Test
 
             //Assert
             Assert.Equal("Need to set month(s) bigger than 0", caughtException.Message);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_once_should_set_hour_step_daily_frequency_bigger_than_0()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
             CurrentConfiguration.MonthlyOnce = true;
@@ -1216,13 +1319,14 @@ namespace Schedule.Test
 
             //Assert
             Assert.Equal("Need to set hour step in daily frequency bigger than 0", caughtException.Message);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_once_hour_from_should_be_smaller_than_hour_to()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
             CurrentConfiguration.MonthlyOnce = true;
@@ -1245,13 +1349,14 @@ namespace Schedule.Test
 
             //Assert
             Assert.Equal("Hour From not should be bigger than Hour To", caughtException.Message);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_once_should_set_month_frequency()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
             CurrentConfiguration.MonthlyOnce = true;
@@ -1272,6 +1377,7 @@ namespace Schedule.Test
 
             //Assert
             Assert.True("Need to set one of the checks in Monthly Configuration (day, the ..)" == caughtException.Message);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -1281,7 +1387,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_once_per_months(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
             CurrentConfiguration.MonthlyOnce = true;
@@ -1321,6 +1427,7 @@ namespace Schedule.Test
             Assert.True(TheOutput[3].OutputDate == new DateTime(2021, 3, 8, 8, 0, 0));
             Assert.True(TheOutput[4].OutputDate == new DateTime(2021, 3, 8, 10, 0, 0));
             Assert.True(TheOutput[5].OutputDate == new DateTime(2021, 3, 8, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -1330,7 +1437,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_once_per_one_month(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
             CurrentConfiguration.MonthlyOnce = true;
@@ -1366,6 +1473,7 @@ namespace Schedule.Test
                     break;
             }
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 2, 8, 8, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -1375,7 +1483,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_once_per_day_31(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
             CurrentConfiguration.MonthlyOnce = true;
@@ -1411,13 +1519,14 @@ namespace Schedule.Test
                     break;
             }
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 3, 31, 8, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_without_hour_from_and_hour_to()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -1440,13 +1549,14 @@ namespace Schedule.Test
 
             //Assert
             Assert.Equal("Need to set the hour from and hour to", caughtException.Message);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_should_set_MonthlyConfiguration()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = new DateTime(2020, 1, 4);
             CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
@@ -1466,13 +1576,14 @@ namespace Schedule.Test
 
             //Assert
             Assert.Equal("Need to set one of the checks in Monthly Configuration (day, the ..)", caughtException.Message);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_not_avaliable_hour_step()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = new DateTime(2020, 1, 4);
             CurrentConfiguration.DateFrom = new DateTime(2020, 1, 1);
@@ -1490,13 +1601,14 @@ namespace Schedule.Test
 
             //Assert
             Assert.Equal("Hour step must be bigger than 0", caughtException.Message);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_should_fill_date_step()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.DateStep = null;
             CurrentConfiguration.DateFrom = new DateTime(2020, 1, 3);
@@ -1514,13 +1626,14 @@ namespace Schedule.Test
 
             //Assert
             Assert.Equal("Need to set the Date From and Step in configuration", caughtException.Message);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_without_days()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -1543,6 +1656,7 @@ namespace Schedule.Test
 
             //Assert
             Assert.Equal("Need to set the day frequency", caughtException.Message);
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -1552,7 +1666,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_per_monday(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -1591,6 +1705,7 @@ namespace Schedule.Test
             Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 4, 6, 8, 0, 0));
             Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 4, 6, 10, 0, 0));
             Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 4, 6, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -1600,7 +1715,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_per_tuesday(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -1639,6 +1754,7 @@ namespace Schedule.Test
             Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 4, 7, 8, 0, 0));
             Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 4, 7, 10, 0, 0));
             Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 4, 7, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -1648,7 +1764,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_per_wednesday(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -1688,6 +1804,7 @@ namespace Schedule.Test
             Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 4, 1, 8, 0, 0));
             Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 4, 1, 10, 0, 0));
             Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 4, 1, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -1697,7 +1814,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_per_thursday(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -1736,6 +1853,7 @@ namespace Schedule.Test
             Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 4, 2, 8, 0, 0));
             Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 4, 2, 10, 0, 0));
             Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 4, 2, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -1745,7 +1863,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_per_Friday(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -1784,6 +1902,7 @@ namespace Schedule.Test
             Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 4, 3, 8, 0, 0));
             Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 4, 3, 10, 0, 0));
             Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 4, 3, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -1793,7 +1912,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_per_saturday(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -1832,6 +1951,7 @@ namespace Schedule.Test
             Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 4, 4, 8, 0, 0));
             Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 4, 4, 10, 0, 0));
             Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 4, 4, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -1841,7 +1961,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_per_sunday(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -1880,6 +2000,7 @@ namespace Schedule.Test
             Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 4, 5, 8, 0, 0));
             Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 4, 5, 10, 0, 0));
             Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 4, 5, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -1889,7 +2010,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_per_weekendday(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -1934,6 +2055,7 @@ namespace Schedule.Test
             Assert.True(TheOutput[9].OutputDate == new DateTime(2020, 4, 5, 8, 0, 0));
             Assert.True(TheOutput[10].OutputDate == new DateTime(2020, 4, 5, 10, 0, 0));
             Assert.True(TheOutput[11].OutputDate == new DateTime(2020, 4, 5, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -1943,7 +2065,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_per_weekday(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2006,6 +2128,7 @@ namespace Schedule.Test
             Assert.True(TheOutput[27].OutputDate == new DateTime(2020, 4, 5, 8, 0, 0));
             Assert.True(TheOutput[28].OutputDate == new DateTime(2020, 4, 5, 10, 0, 0));
             Assert.True(TheOutput[29].OutputDate == new DateTime(2020, 4, 5, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -2015,7 +2138,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_per_day(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2054,6 +2177,7 @@ namespace Schedule.Test
             Assert.True(TheOutput[3].OutputDate == new DateTime(2020, 4, 1, 8, 0, 0));
             Assert.True(TheOutput[4].OutputDate == new DateTime(2020, 4, 1, 10, 0, 0));
             Assert.True(TheOutput[5].OutputDate == new DateTime(2020, 4, 1, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -2063,7 +2187,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_one_hour(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2097,6 +2221,7 @@ namespace Schedule.Test
                     Assert.True(TheOutput[0].Description == "Occurs the first thursday of every 3 months every hour between 8:00 am and 8:00 am starting on 1/1/2020");
                     break;
             }
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -2106,7 +2231,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_one_month(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2140,13 +2265,14 @@ namespace Schedule.Test
                     Assert.True(TheOutput[0].Description == "Occurs the first thursday of every month every hour between 8:00 am and 8:00 am starting on 1/1/2020");
                     break;
             }
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_weekend_days_may()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2168,13 +2294,14 @@ namespace Schedule.Test
 
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 5, 1, 8, 0, 0));
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 5, 2, 8, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_weekend_days2_january()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2196,13 +2323,14 @@ namespace Schedule.Test
 
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 1, 2, 8, 0, 0));
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 1, 3, 8, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_weekend_days_february()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2224,13 +2352,14 @@ namespace Schedule.Test
 
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 2, 6, 8, 0, 0));
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 2, 7, 8, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_weekend_days_march()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2252,13 +2381,14 @@ namespace Schedule.Test
 
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 3, 6, 8, 0, 0));
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 3, 7, 8, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_weekend_days_april()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2280,13 +2410,14 @@ namespace Schedule.Test
 
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 4, 3, 8, 0, 0));
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 4, 4, 8, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_weekend_days_june()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2308,13 +2439,14 @@ namespace Schedule.Test
 
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 6, 5, 8, 0, 0));
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 6, 6, 8, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_weekend_days_july()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2336,13 +2468,14 @@ namespace Schedule.Test
 
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 7, 3, 8, 0, 0));
             Assert.True(TheOutput[1].OutputDate == new DateTime(2021, 7, 4, 8, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Fact]
         public void Execute_recurring_MonthlyWeekly_more_weekend_days_august()
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2363,6 +2496,7 @@ namespace Schedule.Test
             Output[] TheOutput = this.process.Execute(CurrentConfiguration.DateStep.Value, CurrentConfiguration);
 
             Assert.True(TheOutput[0].OutputDate == new DateTime(2021, 8, 1, 8, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -2372,7 +2506,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_per_first_week(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2408,6 +2542,7 @@ namespace Schedule.Test
             }
             Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 2, 10, 0, 0));
             Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 2, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -2417,7 +2552,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_per_second_week(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2453,6 +2588,7 @@ namespace Schedule.Test
             }
             Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 9, 10, 0, 0));
             Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 9, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -2462,7 +2598,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_per_third_week(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2498,6 +2634,7 @@ namespace Schedule.Test
             }
             Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 16, 10, 0, 0));
             Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 16, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -2507,7 +2644,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_per_fourth_week(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2543,6 +2680,7 @@ namespace Schedule.Test
             }
             Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 23, 10, 0, 0));
             Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 23, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -2552,7 +2690,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_per_last_week(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2588,6 +2726,7 @@ namespace Schedule.Test
             }
             Assert.True(TheOutput[1].OutputDate == new DateTime(2020, 1, 30, 10, 0, 0));
             Assert.True(TheOutput[2].OutputDate == new DateTime(2020, 1, 30, 12, 0, 0));
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -2597,7 +2736,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_monday_day_1(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2631,6 +2770,7 @@ namespace Schedule.Test
                     Assert.True(TheOutput[0].Description == "Occurs the first monday of every 3 months every 2 hours between 8:00 am and 8:00 am starting on 2/1/2021");
                     break;
             }
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
 
@@ -2641,7 +2781,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_tuesday_day_1(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2675,6 +2815,7 @@ namespace Schedule.Test
                     Assert.True(TheOutput[0].Description == "Occurs the first tuesday of every 3 months every 2 hours between 8:00 am and 8:00 am starting on 6/1/2021");
                     break;
             }
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -2684,7 +2825,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_friday_day_1(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2718,6 +2859,7 @@ namespace Schedule.Test
                     Assert.True(TheOutput[0].Description == "Occurs the first friday of every 3 months every 2 hours between 8:00 am and 8:00 am starting on 1/1/2021");
                     break;
             }
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
 
         [Theory]
@@ -2727,7 +2869,7 @@ namespace Schedule.Test
         public void Execute_recurring_MonthlyWeekly_more_sunday_day_1(Languages Language)
         {
             // Arrange
-            Configuration CurrentConfiguration = new Configuration();
+            ScheduleConfiguration CurrentConfiguration = new ScheduleConfiguration();
             CurrentConfiguration.Enabled = true;
             CurrentConfiguration.TimeType = TypeStep.Recurring;
             CurrentConfiguration.TypeRecurring = TypeTimeStep.Monthly;
@@ -2761,6 +2903,7 @@ namespace Schedule.Test
                     Assert.True(TheOutput[0].Description == "Occurs the first sunday of every 3 months every 2 hours between 8:00 am and 8:00 am starting on 8/1/2021");
                     break;
             }
+            this.process.RemoveConfiguration(CurrentConfiguration);
         }
     }
 }
